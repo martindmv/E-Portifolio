@@ -6,3 +6,17 @@
 
 # Technology : FastAPI
 
+
+
+# What is going to be displayed :
+
+# Name
+# Formation
+# Competences
+# Experiences
+# Projects
+# Link Github and Linkedin
+#
+
+
+
