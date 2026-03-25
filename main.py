@@ -28,8 +28,8 @@ class Portfolio(BaseModel):
     experience : list[Experience]
     projects : list[Project]
     skills : list[Skill]
-    Github : str
-    Linkdin : str
+    github : str
+    linkedin : str
 
 
 
