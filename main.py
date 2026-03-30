@@ -38,10 +38,41 @@ class Portfolio(BaseModel):
 def read_root():
     return {"Title": "E-portfolio"}
 
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str | None = None):
-    return {"item_id": item_id, "q": q}
+# Create a portfolio endpoint that takes a portfolio_id as a path parameter and returns a JSON object with the portfolio details. For simplicity, you can return a hardcoded portfolio object.
 
 
 @app.get("/portfolio/{portfolio_id}")
+def read_portfolio(portfolio_id: int):
+    portfolio = Portfolio(
+        id=portfolio_id,
+        name="Martin Demerdjiev",
+        formation="EPF Ecole d'Ingénieurs",
+        experience=[
+            Experience(
+                id=1,
+                company="Stellantis",
+                role="Operator",
+                duration="1 month",
+                description="Stage ouvrier dans une usine de production automobile."
+            )
+        ],
+        projects=[
+            Project(
+                id=1,
+                name="OceENS",
+                description="Automatisation de la création et collecte de sondage réalisés par les professeurs de l'EPF à chaque fin de semestre.",
+                link="https://github.com/iamjuli3n-cmd/OceENS"
+            )
+        ],
+        skills=[
+            Skill(
+                id=1,
+                name="Python",
+                level="Advanced"
+            )
+        ],
+        github="https://github.com/martindmv",
+        linkedin="https://linkedin.com/in/martindemerdjiev"
+    )
+    return portfolio
+
