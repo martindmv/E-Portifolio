@@ -38,43 +38,15 @@ db_portfolios = []
 def read_root():
     return {"Title": "E-portfolio"}
 
-# Create a portfolio endpoint that takes a portfolio_id as a path parameter 
-# and returns a JSON object with the portfolio details. For simplicity, you can return a hardcoded portfolio object.
+# Create a get portfolio endpoint that takes a portfolio_id as a path parameter 
+# and returns the portfolio with the corresponding id from a temporary list of portfolios.
 
 @app.get("/portfolio/{portfolio_id}")
 def read_portfolio(portfolio_id: int):
-    portfolio = Portfolio(
-        id=portfolio_id,
-        name="Martin Demerdjiev",
-        formation="EPF Ecole d'Ingénieurs",
-        experience=[
-            Experience(
-                id=1,
-                company="Stellantis",
-                role="Operator",
-                duration="1 month",
-                description="Stage ouvrier dans une usine de production automobile."
-            )
-        ],
-        projects=[
-            Project(
-                id=1,
-                name="OceENS",
-                description="Automatisation de la création et collecte de sondage réalisés par les professeurs de l'EPF à chaque fin de semestre.",
-                link="https://github.com/iamjuli3n-cmd/OceENS"
-            )
-        ],
-        skills=[
-            Skill(
-                id=1,
-                name="Python",
-                level="Advanced"
-            )
-        ],
-        github="https://github.com/martindmv",
-        linkedin="https://linkedin.com/in/martindemerdjiev"
-    )
-    return portfolio
+    for portfolio in db_portfolios:
+        if portfolio.id == portfolio_id:
+            return portfolio
+    return {"message": "Portfolio not found"}
 
 # Create a post endpoint to add a new portfolio.
 # Parameters should include name, formation, experience, projects, skills, github and linkedin.
@@ -90,7 +62,7 @@ def create_portfolio(name: str,
                     linkedin: str):
     
     portfolio = Portfolio(
-        id=len(db_portfolios) + 1,  # This would typically be generated
+        id=len(db_portfolios) + 1,  # generating id automatically
         name=name,
         formation=formation,
         experience=experience,
