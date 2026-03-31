@@ -6,6 +6,7 @@ This site allows to create E-Portfolios for the purpose of highlight our compete
 - Create a virtual environment --> On Windows : py -m venv env
 - Install the requirements --> pip install -r requirements.py
 - Run main.py
+- If the code doesn't send an URL http when you are running "main.py", you may run the following command "uvicorn main:app --reload" into your terminal.
 
 # Technology : FastAPI
 
