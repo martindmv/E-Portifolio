@@ -1,7 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
+
+templates = Jinja2Templates(directory="templates")
 
 class Skill(BaseModel):
     id : int
@@ -71,7 +75,7 @@ def read_root():
 # Create a get portfolio endpoint that takes a portfolio_id as a path parameter 
 # and returns the portfolio with the corresponding id from a temporary list of portfolios.
 
-@app.get("/portfolio/{portfolio_id}")
+@app.get("/portfolio/{portfolio_id}", response_class=HTMLResponse)
 def read_portfolio(portfolio_id: int):
     for portfolio in db_portfolios:
         if portfolio["id"] == portfolio_id:
@@ -106,6 +110,8 @@ def create_portfolio(name: str,
     return {"message": "Portfolio created successfully!", "portfolios": db_portfolios}
 
 # Welcome page with list of available portfolios
-@app.get("/portfolio")
-def list_portfolios():
-    return {"message": "Welcome to the E-portfolio website! Use /portfolio/{portfolio_id} to view a specific portfolio.", "portfolios": db_portfolios}
+@app.get("/portfolio", response_class=HTMLResponse)
+def list_portfolios(request: Request, test_str: str = "Test it's working"):
+    context = {"test_str": test_str, "db_portfolios": db_portfolios}
+
+    return templates.TemplateResponse(request, "home.html", context=context)
