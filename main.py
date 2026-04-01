@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 
+# Va chercher mes fichiers HTML dans le dossier templates
 templates = Jinja2Templates(directory="templates")
 
 class Skill(BaseModel):
@@ -75,7 +76,7 @@ def read_root():
 # Create a get portfolio endpoint that takes a portfolio_id as a path parameter 
 # and returns the portfolio with the corresponding id from a temporary list of portfolios.
 
-@app.get("/portfolio/{portfolio_id}", response_class=HTMLResponse)
+@app.get("/portfolio/{portfolio_id}")
 def read_portfolio(portfolio_id: int):
     for portfolio in db_portfolios:
         if portfolio["id"] == portfolio_id:
@@ -108,6 +109,8 @@ def create_portfolio(name: str,
     )
     db_portfolios.append(portfolio)
     return {"message": "Portfolio created successfully!", "portfolios": db_portfolios}
+
+
 
 # Welcome page with list of available portfolios
 @app.get("/portfolio", response_class=HTMLResponse)
