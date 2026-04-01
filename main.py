@@ -31,7 +31,37 @@ class Portfolio(BaseModel):
     github : str
     linkedin : str
 
-db_portfolios = []
+db_portfolios = [{
+      "id": 1,
+      "name": "Victord Eymard",
+      "formation": "Data & AI",
+      "experience": [
+        {
+          "id": 0,
+          "company": "string",
+          "role": "string",
+          "duration": "string",
+          "description": "string"
+        }
+      ],
+      "projects": [
+        {
+          "id": 0,
+          "name": "string",
+          "description": "string",
+          "link": "string"
+        }
+      ],
+      "skills": [
+        {
+          "id": 0,
+          "name": "string",
+          "level": "string"
+        }
+      ],
+      "github": "https://github.com/Victor-7934",
+      "linkedin": "https://www.linkedin.com/in/victor-eymard/"
+    }]
 
 
 @app.get("/")
@@ -47,6 +77,7 @@ def read_portfolio(portfolio_id: int):
         if portfolio.id == portfolio_id:
             return portfolio
     return {"message": "Portfolio not found"}
+
 
 # Create a post endpoint to add a new portfolio.
 # Parameters should include name, formation, experience, projects, skills, github and linkedin.
