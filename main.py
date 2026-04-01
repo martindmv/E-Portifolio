@@ -32,36 +32,36 @@ class Portfolio(BaseModel):
     linkedin : str
 
 db_portfolios = [{
-      "id": 1,
-      "name": "Victord Eymard",
-      "formation": "Data & AI",
-      "experience": [
-        {
-          "id": 0,
-          "company": "string",
-          "role": "string",
-          "duration": "string",
-          "description": "string"
-        }
-      ],
-      "projects": [
-        {
-          "id": 0,
-          "name": "string",
-          "description": "string",
-          "link": "string"
-        }
-      ],
-      "skills": [
-        {
-          "id": 0,
-          "name": "string",
-          "level": "string"
-        }
-      ],
-      "github": "https://github.com/Victor-7934",
-      "linkedin": "https://www.linkedin.com/in/victor-eymard/"
-    }]
+  "id": 1,
+  "name": "Victor Eymard",
+  "formation": "Data",
+  "experience": [
+    {
+      "id": 0,
+      "company": "string",
+      "role": "string",
+      "duration": "string",
+      "description": "string"
+    }
+  ],
+  "projects": [
+    {
+      "id": 0,
+      "name": "string",
+      "description": "string",
+      "link": "string"
+    }
+  ],
+  "skills": [
+    {
+      "id": 0,
+      "name": "string",
+      "level": "string"
+    }
+  ],
+  "github": "github.com/victor",
+  "linkedin": "linkedin.com/victor"
+}]
 
 
 @app.get("/")
@@ -74,7 +74,7 @@ def read_root():
 @app.get("/portfolio/{portfolio_id}")
 def read_portfolio(portfolio_id: int):
     for portfolio in db_portfolios:
-        if portfolio.id == portfolio_id:
+        if portfolio["id"] == portfolio_id:
             return portfolio
     return {"message": "Portfolio not found"}
 
