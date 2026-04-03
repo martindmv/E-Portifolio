@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 
 from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
 
 
 # Creation of the tables Project, Skill, Experience and Portfolio
@@ -12,12 +12,20 @@ class Project(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
     description: str | None
-    link: str | None
+    link: str | None    
+
+    portfolio_id: int | None = Field(default=None, foreign_key="portfolio.id")
+    
+    portfolio: "Portfolio" = Relationship(back_populates="project")
 
 class Skill(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
     level: str 
+    
+    portfolio_id: int | None = Field(default=None, foreign_key="portfolio.id")
+    
+    portfolio: "Portfolio" = Relationship(back_populates="skill")
 
 class Experience(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -26,14 +34,19 @@ class Experience(SQLModel, table=True):
     role: str
     duration: str
     description: str | None
+    # 1. La clé étrangère qui pointe vers l'id du portfolio
+    portfolio_id: int | None = Field(default=None, foreign_key="portfolio.id")
+    
+    # 2. La relation retour vers le Portfolio
+    portfolio: "Portfolio" = Relationship(back_populates="experience")
 
 class Portfolio(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
     formation: str
-    experience: list[Experience] | None
-    projects: list[Project] | None
-    skills: list[Skill] | None
+    experience: list["Experience"] = Relationship(back_populates="portfolio")
+    project: list["Project"] = Relationship(back_populates="portfolio")
+    skill: list["Skill"] = Relationship(back_populates="portfolio")
     github: str | None
     linkedin: str | None
 
