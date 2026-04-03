@@ -1,125 +1,116 @@
-from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi import HTTPException
 
-app = FastAPI()
-
-# Va chercher mes fichiers HTML dans le dossier templates
-templates = Jinja2Templates(directory="templates")
+from typing import Annotated
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
 
 
-class Skill(BaseModel):
-    id: int
+# Creation of the tables Project, Skill, Experience and Portfolio
+class Project(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
     name: str
-    level: str
+    description: str | None
+    link: str | None    
 
+    portfolio_id: int | None = Field(default=None, foreign_key="portfolio.id")
+    
+    portfolio: "Portfolio" = Relationship(back_populates="project")
 
-class Project(BaseModel):
-    id: int
+class Skill(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
     name: str
-    description: str
-    link: str | None = None
+    level: str 
+    
+    portfolio_id: int | None = Field(default=None, foreign_key="portfolio.id")
+    
+    portfolio: "Portfolio" = Relationship(back_populates="skill")
 
-
-class Experience(BaseModel):
-    id: int
+class Experience(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
     company: str
     role: str
     duration: str
-    description: str
+    description: str | None
+    # 1. La clé étrangère qui pointe vers l'id du portfolio
+    portfolio_id: int | None = Field(default=None, foreign_key="portfolio.id")
+    
+    # 2. La relation retour vers le Portfolio
+    portfolio: "Portfolio" = Relationship(back_populates="experience")
 
-
-class Portfolio(BaseModel):
-    id: int
+class Portfolio(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
     name: str
     formation: str
-    experience: list[Experience]
-    projects: list[Project]
-    skills: list[Skill]
-    github: str
-    linkedin: str
+    experience: list["Experience"] = Relationship(back_populates="portfolio")
+    project: list["Project"] = Relationship(back_populates="portfolio")
+    skill: list["Skill"] = Relationship(back_populates="portfolio")
+    github: str | None
+    linkedin: str | None
 
 
-db_portfolios = [
-    {
-        "id": 1,
-        "name": "Victor Eymard",
-        "formation": "Data",
-        "experience": [
-            {
-                "id": 0,
-                "company": "string",
-                "role": "string",
-                "duration": "string",
-                "description": "string",
-            }
-        ],
-        "projects": [
-            {"id": 0, "name": "string", "description": "string", "link": "string"}
-        ],
-        "skills": [{"id": 0, "name": "string", "level": "string"}],
-        "github": "github.com/victor",
-        "linkedin": "linkedin.com/victor",
-    }
-]
+
+sqlite_file_name = "database_portfolio.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, connect_args=connect_args)
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+def get_session():
+    with Session(engine) as session:
+        yield session
 
 
-@app.get("/")
-def read_root():
-    return {"Title": "E-portfolio"}
+SessionDep = Annotated[Session, Depends(get_session)]
+
+app = FastAPI()
 
 
-# Create a get portfolio endpoint that takes a portfolio_id as a path parameter
-# and returns the portfolio with the corresponding id from a temporary list of portfolios.
+# Will search my HTML files within the "Templates" file
+templates = Jinja2Templates(directory="templates")
+
+#Create the datebase 
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
 
 
-@app.get("/portfolio/{portfolio_id}")
-def read_portfolio(portfolio_id: int):
-    for portfolio in db_portfolios:
-        if portfolio["id"] == portfolio_id:
-            return portfolio
-    raise HTTPException(status_code=404, detail="Portfolio not found")
+@app.post("/portfolios/")
+def create_portfolio(portfolio: Portfolio, session: SessionDep) -> Portfolio:
+    session.add(portfolio)
+    session.commit()
+    session.refresh(portfolio)
+    return portfolio
 
 
-# Erreur : return afficher "Internal Server Error"
-# en FAST API utiliser raise pour detecter une erreur
+@app.get("/portfolios/")
+def read_portfolios(
+    session: SessionDep,
+    offset: int = 0,
+    limit: Annotated[int, Query(le=100)] = 100,
+) -> list[Portfolio]:
+    portfolios = session.exec(select(Portfolio).offset(offset).limit(limit)).all()
+    return portfolios
 
 
-# Create a post endpoint to add a new portfolio.
-# Parameters should include name, formation, experience, projects, skills, github and linkedin.
-# The portfolio needs to be added to a temporary list of portfolios
-# id needs to be generated automatically --> use the length of the list + 1
-@app.post("/portfolio")
-def create_portfolio(
-    name: str,
-    formation: str,
-    experience: list[Experience],
-    projects: list[Project],
-    skills: list[Skill],
-    github: str,
-    linkedin: str,
-):
-
-    portfolio = Portfolio(
-        id=len(db_portfolios) + 1,  # generating id automatically
-        name=name,
-        formation=formation,
-        experience=experience,
-        projects=projects,
-        skills=skills,
-        github=github,
-        linkedin=linkedin,
-    )
-    db_portfolios.append(portfolio)
-    return {"message": "Portfolio created successfully!", "portfolios": db_portfolios}
+@app.get("/portfolios/{portfolio_id}")
+def read_portfolio(portfolio_id: int, session: SessionDep) -> Portfolio:
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    return portfolio
 
 
-# Partie Frond End
-# Welcome page with list of available portfolios
-@app.get("/portfolio", response_class=HTMLResponse)
-def list_portfolios(request: Request, test_str: str = "Test it's working"):
-    context = {"test_str": test_str, "db_portfolios": db_portfolios}
-
-    return templates.TemplateResponse(request, "home.html", context=context)
+@app.delete("/portfolios/{portfolio_id}")
+def delete_portfolio(portfolio_id: int, session: SessionDep):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    session.delete(portfolio)
+    session.commit()
+    return {"ok": True}
