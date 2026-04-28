@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Créer un Portfolio - E-Portfolios</title>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.css" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      form {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="text"], input[type="url"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Créer un nouveau Portfolio</h1>
+      <a href="/portfolios/" class="back-link">← Retour à la liste</a>
+    </header>
+
+    <form action="/portfolios/" method="post">
+      <div class="form-group">
+        <label for="name">Nom du portfolio :</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="formation">Formation :</label>
+        <input type="text" id="formation" name="formation" required>
+      </div>
+
+      <div class="form-group">
+        <label for="github">Lien GitHub (optionnel) :</label>
+        <input type="url" id="github" name="github">
+      </div>
+
+      <div class="form-group">
+        <label for="linkedin">Lien LinkedIn (optionnel) :</label>
+        <input type="url" id="linkedin" name="linkedin">
+      </div>
+
+      <button type="submit">Créer le portfolio</button>
+    </form>
+  </body>
+</html></content>
+<parameter name="filePath">c:\martin\EPF\Web Programming\E-Portifolio\templates\create_portfolio.html

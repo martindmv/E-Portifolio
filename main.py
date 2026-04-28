@@ -1,10 +1,10 @@
-from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from typing import Annotated
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Form
 from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
+from fastapi.responses import RedirectResponse
 
 
 # Creation of the tables Project, Skill, Experience and Portfolio
@@ -81,21 +81,34 @@ def on_startup():
 
 
 @app.post("/portfolios/")
-def create_portfolio(portfolio: Portfolio, session: SessionDep) -> Portfolio:
+def create_portfolio(
+    name: str = Form(...),
+    formation: str = Form(...),
+    github: str | None = Form(None),
+    linkedin: str | None = Form(None),
+    session: SessionDep = None
+):
+    portfolio = Portfolio(name=name, formation=formation, github=github, linkedin=linkedin)
     session.add(portfolio)
     session.commit()
     session.refresh(portfolio)
-    return portfolio
+    return RedirectResponse(url="/portfolios/", status_code=303)
 
 
-@app.get("/portfolios/")
-def read_portfolios(
+@app.get("/portfolios/", response_class=HTMLResponse)
+def read_portfolios_page(
+    request: Request,
     session: SessionDep,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
-) -> list[Portfolio]:
+):
     portfolios = session.exec(select(Portfolio).offset(offset).limit(limit)).all()
-    return portfolios
+    return templates.TemplateResponse("home.html", {"request": request, "db_portfolios": portfolios})
+
+
+@app.get("/portfolios/create", response_class=HTMLResponse)
+def create_portfolio_page(request: Request):
+    return templates.TemplateResponse("create_portfolio.html", {"request": request})
 
 
 @app.get("/portfolios/{portfolio_id}")
