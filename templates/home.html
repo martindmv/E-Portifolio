@@ -1,20 +1,67 @@
-<html>
+<!DOCTYPE html>
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <title>E-Portfolios</title>
+    <title>E-Portfolios - Accueil</title>
     <link rel="stylesheet" href="https://cdn.simplecss.org/simple.css" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .portfolio-card {
+        border: 1px solid #5c5c5c;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+        background-color: #f9f9f9;
+      }
+      .portfolio-card h3 {
+        margin-top: 0;
+      }
+      .create-button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        display: inline-block;
+        margin-bottom: 20px;
+      }
+      .create-button:hover {
+        background-color: #45a049;
+      }
+    </style>
   </head>
   <body>
     <header>
-      <h1>Liste des Portfolios disponibles</h1>
+      <h1>E-Portfolios</h1>
+      <p>Gérez et visualisez vos portfolios professionnels</p>
     </header>
-    <div>
-      <strong>liste des Portfolios</strong>
-      <ul>
-        {%for portfolio in db_portfolios%}
-        <li>{{portfolio["name"]}}</li>
-        {%endfor%}
-      </ul>
-    </div>
+
+    <a href="/portfolios/create" class="create-button">Créer un nouveau portfolio</a>
+
+    <section>
+      <h2>Portfolios disponibles</h2>
+      {% if db_portfolios %}
+        {% for portfolio in db_portfolios %}
+          <div class="portfolio-card">
+            <h3>{{ portfolio.name }}</h3>
+            <p><strong>Formation :</strong> {{ portfolio.formation }}</p>
+            {% if portfolio.github %}
+              <p><strong>GitHub :</strong> <a href="{{ portfolio.github }}" target="_blank">{{ portfolio.github }}</a></p>
+            {% endif %}
+            {% if portfolio.linkedin %}
+              <p><strong>LinkedIn :</strong> <a href="{{ portfolio.linkedin }}" target="_blank">{{ portfolio.linkedin }}</a></p>
+            {% endif %}
+            <p><strong>Compétences :</strong> {{ portfolio.skill | length }}</p>
+            <p><strong>Projets :</strong> {{ portfolio.project | length }}</p>
+            <p><strong>Expériences :</strong> {{ portfolio.experience | length }}</p>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p>Aucun portfolio disponible. <a href="/portfolios/create">Créez-en un !</a></p>
+      {% endif %}
+    </section>
   </body>
 </html>
