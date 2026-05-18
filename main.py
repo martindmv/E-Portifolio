@@ -2,7 +2,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from typing import Annotated
+from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Form
+from fastapi.staticfiles import StaticFiles
 from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
 from fastapi.responses import RedirectResponse
 
@@ -44,9 +46,22 @@ class Portfolio(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
     formation: str
-    experience: list["Experience"] = Relationship(back_populates="portfolio")
-    project: list["Project"] = Relationship(back_populates="portfolio")
-    skill: list["Skill"] = Relationship(back_populates="portfolio")
+    # NOTE: Pour la future intégration de l'authentification, on pourra ajouter :
+    # user_id: int | None = Field(default=None, foreign_key="user.id")
+    # user: "User" = Relationship(back_populates="portfolios")
+    
+    experience: list["Experience"] = Relationship(
+        back_populates="portfolio", 
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"} # permet de supprimer les relations enfants quand le parent est supprimé
+    )
+    project: list["Project"] = Relationship(
+        back_populates="portfolio", 
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
+    skill: list["Skill"] = Relationship(
+        back_populates="portfolio", 
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
     github: str | None
     linkedin: str | None
 
@@ -68,25 +83,28 @@ def get_session():
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Création de la base de données au démarrage
+    create_db_and_tables()
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 # Will search my HTML files within the "Templates" file
 templates = Jinja2Templates(directory="templates")
 
-#Create the datebase 
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
-
 
 @app.post("/portfolios/")
 def create_portfolio(
+    session: SessionDep,
     name: str = Form(...),
     formation: str = Form(...),
     github: str | None = Form(None),
     linkedin: str | None = Form(None),
-    session: SessionDep = None
 ):
     portfolio = Portfolio(name=name, formation=formation, github=github, linkedin=linkedin)
     session.add(portfolio)
@@ -103,20 +121,24 @@ def read_portfolios_page(
     limit: Annotated[int, Query(le=100)] = 100,
 ):
     portfolios = session.exec(select(Portfolio).offset(offset).limit(limit)).all()
-    return templates.TemplateResponse("home.html", {"request": request, "db_portfolios": portfolios})
+    return templates.TemplateResponse(request=request, name="home.html", context={"db_portfolios": portfolios})
 
 
 @app.get("/portfolios/create", response_class=HTMLResponse)
 def create_portfolio_page(request: Request):
-    return templates.TemplateResponse("create_portfolio.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="create_portfolio.html")
 
 
-@app.get("/portfolios/{portfolio_id}")
-def read_portfolio(portfolio_id: int, session: SessionDep) -> Portfolio:
+@app.get("/portfolios/{portfolio_id}", response_class=HTMLResponse)
+def read_portfolio(request: Request, portfolio_id: int, session: SessionDep):
     portfolio = session.get(Portfolio, portfolio_id)
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
-    return portfolio
+    return templates.TemplateResponse(
+        request=request, 
+        name="portfolio_detail.html", 
+        context={"portfolio": portfolio}
+    )
 
 
 @app.delete("/portfolios/{portfolio_id}")

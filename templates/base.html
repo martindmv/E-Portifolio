@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}E-Portfolios{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+    <nav>
+        <a href="/portfolios/" class="brand">✨ E-Portfolios</a>
+        <div class="nav-links">
+            <a href="/portfolios/">Accueil</a>
+            <a href="/portfolios/create" class="btn" style="padding: 0.5rem 1rem; margin-left: 1rem;">Créer</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html>
