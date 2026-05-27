@@ -161,6 +161,16 @@ def delete_portfolio(portfolio_id: int, session: SessionDep):
     return {"ok": True}
 
 
+@app.post("/portfolios/{portfolio_id}/delete")
+def delete_portfolio_post(portfolio_id: int, session: SessionDep):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    session.delete(portfolio)
+    session.commit()
+    return RedirectResponse(url="/portfolios/", status_code=303)
+
+
 # Ajouter une compétence à un portfolio
 @app.post("/portfolios/{portfolio_id}/skills/")
 def create_skill(
@@ -189,7 +199,8 @@ def delete_skill(skill_id: int, session: SessionDep):
     session.commit()
     return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
 
-    # Ajouter une expérience
+
+# Ajouter une expérience
 
 
 @app.post("/portfolios/{portfolio_id}/experiences/")

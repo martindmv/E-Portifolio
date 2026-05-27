@@ -23,6 +23,13 @@
 
       <a href="/portfolios/{{ portfolio.id }}" class="btn"
         style="width: 100%; text-align: center; margin-top: 1rem;">Voir les détails →</a>
+      <!-- ✅ Ajoute ici -->
+      <form action="/portfolios/{{ portfolio.id }}/delete" method="post" style="margin-top: 0.5rem;">
+        <button type="submit"
+          style="width:100%; background:#ef4444; border:none; color:white; padding:0.6rem; border-radius:8px; cursor:pointer;">
+          Supprimer
+        </button>
+      </form>
     </div>
     {% endfor %}
   </div>
