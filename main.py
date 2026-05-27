@@ -228,3 +228,35 @@ def delete_experience(experience_id: int, session: SessionDep):
     session.delete(experience)
     session.commit()
     return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
+
+
+# Ajouter un projet
+@app.post("/portfolios/{portfolio_id}/projects/")
+def create_project(
+    portfolio_id: int,
+    session: SessionDep,
+    name: str = Form(...),
+    description: str | None = Form(None),
+    link: str | None = Form(None),
+):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    project = Project(
+        name=name, description=description, link=link, portfolio_id=portfolio_id
+    )
+    session.add(project)
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
+
+
+# Supprimer un projet
+@app.post("/projects/{project_id}/delete")
+def delete_project(project_id: int, session: SessionDep):
+    project = session.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    portfolio_id = project.portfolio_id
+    session.delete(project)
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)

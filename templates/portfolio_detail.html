@@ -127,7 +127,15 @@
         {% if portfolio.project %}
         {% for proj in portfolio.project %}
         <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
-          <h3 style="margin-bottom: 0.5rem;">{{ proj.name }}</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin-bottom: 0.5rem;">{{ proj.name }}</h3>
+            <form action="/projects/{{ proj.id }}/delete" method="post">
+              <button type="submit"
+                style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
+                Supprimer
+              </button>
+            </form>
+          </div>
           {% if proj.description %}
           <p style="color: var(--text-main);">{{ proj.description }}</p>
           {% endif %}
@@ -140,6 +148,20 @@
         {% else %}
         <p>Aucun projet renseigné.</p>
         {% endif %}
+
+        <!-- Formulaire ajout projet -->
+        <form action="/portfolios/{{ portfolio.id }}/projects/" method="post" style="margin-top:1rem;">
+          <div class="form-group">
+            <input type="text" name="name" placeholder="Nom du projet" required>
+          </div>
+          <div class="form-group">
+            <textarea name="description" placeholder="Description (optionnel)" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <input type="url" name="link" placeholder="Lien du projet (optionnel)">
+          </div>
+          <button type="submit" class="btn btn-secondary">+ Ajouter</button>
+        </form>
 
       </div>
       <!-- Fin carte Projets -->
