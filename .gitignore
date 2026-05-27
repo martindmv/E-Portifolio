@@ -216,3 +216,13 @@ __marimo__/
 .streamlit/secrets.toml
 
 database_portfolio.db
+
+# Ignorer la clé privée Firebase
+serviceAccountKey.json
+
+# Ignorer les variables d'environnement
+.env
+
+# Ignorer les dossiers virtuels Python
+venv/
+__pycache__/

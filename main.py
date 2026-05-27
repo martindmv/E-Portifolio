@@ -3,10 +3,12 @@ from fastapi.templating import Jinja2Templates
 
 from typing import Annotated
 from contextlib import asynccontextmanager
+import sqlite3
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Form
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
 from fastapi.responses import RedirectResponse
+from auth import get_current_user, get_optional_user
 
 
 # Creation of the tables Project, Skill, Experience and Portfolio
@@ -69,6 +71,7 @@ class Portfolio(SQLModel, table=True):
     )
     github: str | None
     linkedin: str | None
+    firebase_uid: str | None = Field(default=None, index=True)  # ID utilisateur Firebase
 
 
 sqlite_file_name = "database_portfolio.db"
@@ -94,6 +97,19 @@ SessionDep = Annotated[Session, Depends(get_session)]
 async def lifespan(app: FastAPI):
     # Création de la base de données au démarrage
     create_db_and_tables()
+    # Migration : ajouter la colonne firebase_uid si elle n'existe pas encore
+    try:
+        conn = sqlite3.connect(sqlite_file_name)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(portfolio)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if "firebase_uid" not in columns:
+            cursor.execute("ALTER TABLE portfolio ADD COLUMN firebase_uid TEXT")
+            conn.commit()
+            print("✅ Migration : colonne 'firebase_uid' ajoutée à la table 'portfolio'")
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ Migration firebase_uid : {e}")
     yield
 
 
@@ -113,9 +129,13 @@ def create_portfolio(
     formation: str = Form(...),
     github: str | None = Form(None),
     linkedin: str | None = Form(None),
+    user: dict | None = Depends(get_optional_user),
 ):
+    # Si l'utilisateur est connecté, on lie le portfolio à son compte Firebase
+    firebase_uid = user["uid"] if user else None
     portfolio = Portfolio(
-        name=name, formation=formation, github=github, linkedin=linkedin
+        name=name, formation=formation, github=github, linkedin=linkedin,
+        firebase_uid=firebase_uid,
     )
     session.add(portfolio)
     session.commit()
@@ -141,6 +161,23 @@ def create_portfolio_page(request: Request):
     return templates.TemplateResponse(request=request, name="create_portfolio.html")
 
 
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse(request=request, name="login.html")
+
+
+# ============================================================
+# Route protégée de test — nécessite un token Firebase valide
+# ============================================================
+@app.get("/api/portfolio/prive")
+def route_privee(user: dict = Depends(get_current_user)):
+    return {
+        "message": f"Bienvenue {user.get('email', 'utilisateur')} !",
+        "uid": user["uid"],
+        "email": user.get("email"),
+    }
+
+
 @app.get("/portfolios/{portfolio_id}", response_class=HTMLResponse)
 def read_portfolio(request: Request, portfolio_id: int, session: SessionDep):
     portfolio = session.get(Portfolio, portfolio_id)
@@ -152,10 +189,20 @@ def read_portfolio(request: Request, portfolio_id: int, session: SessionDep):
 
 
 @app.delete("/portfolios/{portfolio_id}")
-def delete_portfolio(portfolio_id: int, session: SessionDep):
+def delete_portfolio(
+    portfolio_id: int,
+    session: SessionDep,
+    user: dict = Depends(get_current_user),
+):
     portfolio = session.get(Portfolio, portfolio_id)
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
+    # Vérifie que l'utilisateur est bien le propriétaire du portfolio
+    if portfolio.firebase_uid and portfolio.firebase_uid != user["uid"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Vous n'êtes pas le propriétaire de ce portfolio.",
+        )
     session.delete(portfolio)
     session.commit()
     return {"ok": True}

@@ -31,8 +31,51 @@
         <input type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/votre-profil">
       </div>
 
-      <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Créer le portfolio</button>
+      <button type="submit" class="btn" id="create-submit" style="width: 100%; margin-top: 1rem;">Créer le portfolio</button>
     </form>
   </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script type="module">
+    import { getAuth } from "firebase/auth";
+
+    const auth = getAuth();
+    const form = document.querySelector('form');
+
+    form.addEventListener('submit', async (e) => {
+        const user = auth.currentUser;
+
+        // Si l'utilisateur n'est pas connecté, laisser le formulaire se soumettre normalement
+        if (!user) return;
+
+        // Si connecté, intercepter pour ajouter le token d'authentification
+        e.preventDefault();
+        const btn = document.getElementById('create-submit');
+        btn.disabled = true;
+        btn.textContent = 'Création en cours...';
+
+        try {
+            // Récupérer un token frais
+            const token = await user.getIdToken();
+            const formData = new FormData(form);
+
+            const response = await fetch('/portfolios/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            // Redirection après création réussie
+            window.location.href = '/portfolios/';
+        } catch (error) {
+            console.error('Erreur:', error);
+            btn.disabled = false;
+            btn.textContent = 'Créer le portfolio';
+        }
+    });
+</script>
+{% endblock %}
