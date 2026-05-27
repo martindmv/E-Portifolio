@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un Portfolio - E-Portfolios{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" style="max-width: 600px; margin: 0 auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>Nouveau Portfolio</h2>
+    <a href="/portfolios/" class="btn btn-secondary">Annuler</a>
+  </div>
+
+  <div class="card delay-1 animate-fade-in" style="opacity: 0; margin-top: 2rem;">
+    <form action="/portfolios/" method="post">
+      <div class="form-group">
+        <label for="name">Nom du portfolio</label>
+        <input type="text" id="name" name="name" placeholder="Ex: Jean Dupont - Développeur Web" required>
+      </div>
+
+      <div class="form-group">
+        <label for="formation">Formation actuelle</label>
+        <input type="text" id="formation" name="formation" placeholder="Ex: Master Informatique" required>
+      </div>
+
+      <div class="form-group">
+        <label for="github">Lien GitHub (optionnel)</label>
+        <input type="url" id="github" name="github" placeholder="https://github.com/votre-profil">
+      </div>
+
+      <div class="form-group">
+        <label for="linkedin">Lien LinkedIn (optionnel)</label>
+        <input type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/votre-profil">
+      </div>
+
+      <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Créer le portfolio</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
