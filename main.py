@@ -188,3 +188,43 @@ def delete_skill(skill_id: int, session: SessionDep):
     session.delete(skill)
     session.commit()
     return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
+
+    # Ajouter une expérience
+
+
+@app.post("/portfolios/{portfolio_id}/experiences/")
+def create_experience(
+    portfolio_id: int,
+    session: SessionDep,
+    name: str = Form(...),
+    company: str = Form(...),
+    role: str = Form(...),
+    duration: str = Form(...),
+    description: str | None = Form(None),
+):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    experience = Experience(
+        name=name,
+        company=company,
+        role=role,
+        duration=duration,
+        description=description,
+        portfolio_id=portfolio_id,
+    )
+    session.add(experience)
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
+
+
+# Supprimer une expérience
+@app.post("/experiences/{experience_id}/delete")
+def delete_experience(experience_id: int, session: SessionDep):
+    experience = session.get(Experience, experience_id)
+    if not experience:
+        raise HTTPException(status_code=404, detail="Experience not found")
+    portfolio_id = experience.portfolio_id
+    session.delete(experience)
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)

@@ -19,35 +19,26 @@
   </div>
 
   <div class="portfolio-grid">
-    <!-- Colonne de gauche : Compétences -->
+
+    <!-- ===== COLONNE GAUCHE : Compétences ===== -->
     <div class="card delay-1 animate-fade-in" style="opacity: 0;">
       <h2>🛠️ Compétences</h2>
+
       {% if portfolio.skill %}
       <ul style="list-style-type: none; padding: 0;">
         {% for skill in portfolio.skill %}
         <li style="margin-bottom: 0.8rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-
             <div>
               <strong>{{ skill.name }}</strong>
-              <span style="color: #a855f7; margin-left: 10px;">
-                {{ skill.level }}
-              </span>
+              <span style="color: #a855f7; margin-left: 10px;">{{ skill.level }}</span>
             </div>
-
             <form action="/skills/{{ skill.id }}/delete" method="post">
-              <button type="submit" style="
-          background: #ef4444;
-          border: none;
-          color: white;
-          padding: 0.4rem 0.7rem;
-          border-radius: 8px;
-          cursor: pointer;
-        ">
+              <button type="submit"
+                style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
                 Supprimer
               </button>
             </form>
-
           </div>
         </li>
         {% endfor %}
@@ -55,6 +46,8 @@
       {% else %}
       <p>Aucune compétence renseignée.</p>
       {% endif %}
+
+      <!-- Formulaire ajout compétence -->
       <form action="/portfolios/{{ portfolio.id }}/skills/" method="post" style="margin-top:1rem;">
         <div class="form-group">
           <input type="text" name="name" placeholder="Compétence (ex: Python)" required>
@@ -70,16 +63,29 @@
       </form>
 
     </div>
+    <!-- ===== FIN COLONNE GAUCHE ===== -->
 
-    <!-- Colonne centrale/droite : Expériences & Projets -->
+
+    <!-- ===== COLONNE DROITE : Expériences & Projets ===== -->
     <div style="grid-column: span 2;">
+
+      <!-- Carte Expériences -->
       <div class="card delay-2 animate-fade-in" style="opacity: 0; margin-bottom: 1.5rem;">
         <h2>💼 Expériences</h2>
+
         {% if portfolio.experience %}
         {% for exp in portfolio.experience %}
         <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
-          <h3 style="margin-bottom: 0.2rem;">{{ exp.role }} chez <span style="color: #6366f1;">{{ exp.company }}</span>
-          </h3>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin-bottom: 0.2rem;">{{ exp.role }} chez <span style="color: #6366f1;">{{ exp.company
+                }}</span></h3>
+            <form action="/experiences/{{ exp.id }}/delete" method="post">
+              <button type="submit"
+                style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
+                Supprimer
+              </button>
+            </form>
+          </div>
           <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">⏳ {{ exp.duration }}</p>
           {% if exp.description %}
           <p style="color: var(--text-main);">{{ exp.description }}</p>
@@ -89,10 +95,35 @@
         {% else %}
         <p>Aucune expérience renseignée.</p>
         {% endif %}
-      </div>
 
+        <!-- Formulaire ajout expérience -->
+        <form action="/portfolios/{{ portfolio.id }}/experiences/" method="post" style="margin-top:1rem;">
+          <div class="form-group">
+            <input type="text" name="name" placeholder="Nom de l'expérience" required>
+          </div>
+          <div class="form-group">
+            <input type="text" name="company" placeholder="Entreprise" required>
+          </div>
+          <div class="form-group">
+            <input type="text" name="role" placeholder="Poste / Rôle" required>
+          </div>
+          <div class="form-group">
+            <input type="text" name="duration" placeholder="Durée (ex: 6 mois)" required>
+          </div>
+          <div class="form-group">
+            <textarea name="description" placeholder="Description (optionnel)" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-secondary">+ Ajouter</button>
+        </form>
+
+      </div>
+      <!-- Fin carte Expériences -->
+
+
+      <!-- Carte Projets -->
       <div class="card delay-3 animate-fade-in" style="opacity: 0;">
         <h2>🚀 Projets</h2>
+
         {% if portfolio.project %}
         {% for proj in portfolio.project %}
         <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
@@ -109,23 +140,13 @@
         {% else %}
         <p>Aucun projet renseigné.</p>
         {% endif %}
+
       </div>
+      <!-- Fin carte Projets -->
+
     </div>
+    <!-- ===== FIN COLONNE DROITE ===== -->
+
   </div>
 </div>
 {% endblock %}
-
-<!-- Formulaire pour ajouter une compétence -->
-<form action="/portfolios/{{ portfolio.id }}/skills/" method="post" style="margin-top:1rem;">
-  <div class="form-group">
-    <input type="text" name="name" placeholder="Compétence (ex: Python)" required>
-  </div>
-  <div class="form-group">
-    <select name="level">
-      <option value="Débutant">Débutant</option>
-      <option value="Intermédiaire">Intermédiaire</option>
-      <option value="Avancé">Avancé</option>
-    </select>
-  </div>
-  <button type="submit" class="btn btn-secondary">+ Ajouter</button>
-</form>
