@@ -141,6 +141,39 @@ def create_portfolio_page(request: Request):
     return templates.TemplateResponse(request=request, name="create_portfolio.html")
 
 
+# Page pour éditer un portfolio
+
+
+@app.get("/portfolios/{portfolio_id}/edit", response_class=HTMLResponse)
+def edit_portfolio_page(request: Request, portfolio_id: int, session: SessionDep):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    return templates.TemplateResponse(
+        request=request, name="edit_portfolio.html", context={"portfolio": portfolio}
+    )
+
+
+@app.post("/portfolios/{portfolio_id}/edit")
+def update_portfolio(
+    portfolio_id: int,
+    session: SessionDep,
+    name: str = Form(...),
+    formation: str = Form(...),
+    github: str | None = Form(None),
+    linkedin: str | None = Form(None),
+):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    portfolio.name = name
+    portfolio.formation = formation
+    portfolio.github = github
+    portfolio.linkedin = linkedin
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
+
+
 @app.get("/portfolios/{portfolio_id}", response_class=HTMLResponse)
 def read_portfolio(request: Request, portfolio_id: int, session: SessionDep):
     portfolio = session.get(Portfolio, portfolio_id)
@@ -159,6 +192,9 @@ def delete_portfolio(portfolio_id: int, session: SessionDep):
     session.delete(portfolio)
     session.commit()
     return {"ok": True}
+
+
+# supprimer un portfolio
 
 
 @app.post("/portfolios/{portfolio_id}/delete")
