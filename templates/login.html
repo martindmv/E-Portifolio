@@ -26,14 +26,13 @@
         <!-- Formulaire de connexion -->
         <form id="login-form" class="auth-form">
             <div class="form-group">
-                <label for="login-email">📧 Adresse email</label>
-                <input type="email" id="login-email" placeholder="votre@email.com"
-                       required autocomplete="email">
+                <label for="login-email">Adresse email</label>
+                <input type="email" id="login-email" placeholder="votre@email.com" required autocomplete="email">
             </div>
             <div class="form-group">
-                <label for="login-password">🔒 Mot de passe</label>
-                <input type="password" id="login-password" placeholder="••••••••"
-                       required autocomplete="current-password">
+                <label for="login-password">Mot de passe</label>
+                <input type="password" id="login-password" placeholder="••••••••" required
+                    autocomplete="current-password">
             </div>
             <button type="submit" class="btn auth-submit-btn" id="login-submit">
                 Se connecter →
@@ -43,19 +42,18 @@
         <!-- Formulaire d'inscription (masqué par défaut) -->
         <form id="register-form" class="auth-form" style="display:none;">
             <div class="form-group">
-                <label for="register-email">📧 Adresse email</label>
-                <input type="email" id="register-email" placeholder="votre@email.com"
-                       required autocomplete="email">
+                <label for="register-email">Adresse email</label>
+                <input type="email" id="register-email" placeholder="votre@email.com" required autocomplete="email">
             </div>
             <div class="form-group">
-                <label for="register-password">🔒 Mot de passe</label>
-                <input type="password" id="register-password" placeholder="Minimum 6 caractères"
-                       required minlength="6" autocomplete="new-password">
+                <label for="register-password">Mot de passe</label>
+                <input type="password" id="register-password" placeholder="Minimum 6 caractères" required minlength="6"
+                    autocomplete="new-password">
             </div>
             <div class="form-group">
-                <label for="register-confirm">🔒 Confirmer le mot de passe</label>
-                <input type="password" id="register-confirm" placeholder="••••••••"
-                       required minlength="6" autocomplete="new-password">
+                <label for="register-confirm">Confirmer le mot de passe</label>
+                <input type="password" id="register-confirm" placeholder="••••••••" required minlength="6"
+                    autocomplete="new-password">
             </div>
             <button type="submit" class="btn auth-submit-btn" id="register-submit">
                 Créer mon compte →
@@ -75,28 +73,9 @@
             <a href="/portfolios/" class="btn" style="width:100%; text-align:center;">
                 Accéder aux portfolios →
             </a>
-            <button onclick="testPrivateRoute()" class="btn btn-secondary" style="width:100%;">
-                🔒 Tester la route privée
-            </button>
-            <button onclick="handleLogout()" class="btn btn-secondary"
-                    style="width:100%; color: #ef4444;">
+            <button onclick="handleLogout()" class="btn btn-secondary" style="width:100%; color: #ef4444;">
                 Déconnexion
             </button>
-        </div>
-
-        <div id="api-result" style="display:none; margin-top: 1.5rem;">
-            <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-                Réponse de l'API :
-            </h3>
-            <pre id="api-result-content" style="
-                background: rgba(0,0,0,0.3);
-                padding: 1rem;
-                border-radius: 8px;
-                overflow-x: auto;
-                font-size: 0.85rem;
-                color: #a5f3fc;
-                border: 1px solid rgba(165, 243, 252, 0.2);
-            "></pre>
         </div>
     </div>
 
@@ -118,7 +97,7 @@
     // ========================================================
     // Gestion des onglets Connexion / Inscription
     // ========================================================
-    window.switchTab = function(tab) {
+    window.switchTab = function (tab) {
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
         const tabLogin = document.getElementById('tab-login');
@@ -257,53 +236,9 @@
     });
 
     // ========================================================
-    // Test de la route protégée /api/portfolio/prive
-    // ========================================================
-    window.testPrivateRoute = async function() {
-        const resultDiv = document.getElementById('api-result');
-        const resultContent = document.getElementById('api-result-content');
-
-        try {
-            const user = auth.currentUser;
-            if (!user) {
-                resultContent.textContent = '❌ Vous n\'êtes pas connecté.';
-                resultContent.style.color = '#fca5a5';
-                resultDiv.style.display = 'block';
-                return;
-            }
-
-            // ✅ Récupération d'un token FRAIS (Firebase gère le cache/refresh)
-            const token = await user.getIdToken();
-
-            // Appel API avec le token dans le header Authorization
-            const response = await fetch('/api/portfolio/prive', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                resultContent.textContent = JSON.stringify(data, null, 2);
-                resultContent.style.color = '#a5f3fc';
-            } else {
-                resultContent.textContent = `❌ Erreur ${response.status}: ${JSON.stringify(data, null, 2)}`;
-                resultContent.style.color = '#fca5a5';
-            }
-        } catch (error) {
-            resultContent.textContent = `❌ Erreur réseau : ${error.message}`;
-            resultContent.style.color = '#fca5a5';
-        }
-
-        resultDiv.style.display = 'block';
-    };
-
-    // ========================================================
     // Déconnexion (signOut)
     // ========================================================
-    window.handleLogout = async function() {
+    window.handleLogout = async function () {
         try {
             await signOut(auth);
             window.location.href = '/login';

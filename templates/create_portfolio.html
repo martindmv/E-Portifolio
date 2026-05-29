@@ -9,8 +9,18 @@
     <a href="/portfolios/" class="btn btn-secondary">Annuler</a>
   </div>
 
-  <div class="card delay-1 animate-fade-in" style="opacity: 0; margin-top: 2rem;">
-    <form action="/portfolios/" method="post">
+  <!-- Message affiché si l'utilisateur n'est pas connecté -->
+  <div id="auth-required-msg" class="card" style="display: none; text-align: center; padding: 3rem; margin-top: 2rem;">
+    <h3>🔒 Connexion requise</h3>
+    <p style="color: var(--text-muted); margin: 1rem 0;">
+      Vous devez être connecté pour créer un portfolio.
+    </p>
+    <a href="/login" class="btn">Se connecter →</a>
+  </div>
+
+  <!-- Formulaire de création (masqué par défaut, affiché si connecté) -->
+  <div id="create-form-container" class="card delay-1 animate-fade-in" style="opacity: 0; margin-top: 2rem; display: none;">
+    <form id="create-form" action="/portfolios/" method="post">
       <div class="form-group">
         <label for="name">Nom du portfolio</label>
         <input type="text" id="name" name="name" placeholder="Ex: Jean Dupont - Développeur Web" required>
@@ -42,22 +52,36 @@
     import { getAuth } from "firebase/auth";
 
     const auth = getAuth();
-    const form = document.querySelector('form');
+    const form = document.getElementById('create-form');
+    const formContainer = document.getElementById('create-form-container');
+    const authMsg = document.getElementById('auth-required-msg');
 
+    // Affiche le formulaire seulement si connecté
+    window.addEventListener('auth-state-changed', (e) => {
+        if (e.detail.user) {
+            formContainer.style.display = 'block';
+            authMsg.style.display = 'none';
+        } else {
+            formContainer.style.display = 'none';
+            authMsg.style.display = 'block';
+        }
+    });
+
+    // Intercepter la soumission pour ajouter le token Firebase
     form.addEventListener('submit', async (e) => {
         const user = auth.currentUser;
+        if (!user) {
+            e.preventDefault();
+            window.location.href = '/login';
+            return;
+        }
 
-        // Si l'utilisateur n'est pas connecté, laisser le formulaire se soumettre normalement
-        if (!user) return;
-
-        // Si connecté, intercepter pour ajouter le token d'authentification
         e.preventDefault();
         const btn = document.getElementById('create-submit');
         btn.disabled = true;
         btn.textContent = 'Création en cours...';
 
         try {
-            // Récupérer un token frais
             const token = await user.getIdToken();
             const formData = new FormData(form);
 
@@ -69,8 +93,14 @@
                 }
             });
 
-            // Redirection après création réussie
-            window.location.href = '/portfolios/';
+            if (response.ok || response.redirected) {
+                window.location.href = '/portfolios/';
+            } else {
+                const data = await response.json();
+                alert(data.detail || 'Erreur lors de la création.');
+                btn.disabled = false;
+                btn.textContent = 'Créer le portfolio';
+            }
         } catch (error) {
             console.error('Erreur:', error);
             btn.disabled = false;
@@ -78,4 +108,4 @@
         }
     });
 </script>
-{% endblock %}
+{% endblock %}

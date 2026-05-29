@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, Form
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
 from fastapi.responses import RedirectResponse
-from auth import get_current_user, get_optional_user
+from auth import get_current_user
 
 
 # Creation of the tables Project, Skill, Experience and Portfolio
@@ -129,13 +129,12 @@ def create_portfolio(
     formation: str = Form(...),
     github: str | None = Form(None),
     linkedin: str | None = Form(None),
-    user: dict | None = Depends(get_optional_user),
+    user: dict = Depends(get_current_user),  # Token Firebase OBLIGATOIRE
 ):
-    # Si l'utilisateur est connecté, on lie le portfolio à son compte Firebase
-    firebase_uid = user["uid"] if user else None
+    # Le portfolio est systématiquement lié au compte Firebase de l'utilisateur
     portfolio = Portfolio(
         name=name, formation=formation, github=github, linkedin=linkedin,
-        firebase_uid=firebase_uid,
+        firebase_uid=user["uid"],
     )
     session.add(portfolio)
     session.commit()
@@ -183,8 +182,14 @@ def read_portfolio(request: Request, portfolio_id: int, session: SessionDep):
     portfolio = session.get(Portfolio, portfolio_id)
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
+    # On passe firebase_uid au template pour que le JS compare avec l'UID connecté
     return templates.TemplateResponse(
-        request=request, name="portfolio_detail.html", context={"portfolio": portfolio}
+        request=request,
+        name="portfolio_detail.html",
+        context={
+            "portfolio": portfolio,
+            "owner_uid": portfolio.firebase_uid or "",
+        },
     )
 
 
@@ -208,29 +213,47 @@ def delete_portfolio(
     return {"ok": True}
 
 
-# Ajouter une compétence à un portfolio
+# Ajouter une compétence à un portfolio (propriétaire uniquement)
 @app.post("/portfolios/{portfolio_id}/skills/")
 def create_skill(
     portfolio_id: int,
     session: SessionDep,
     name: str = Form(...),
     level: str = Form(...),
+    user: dict = Depends(get_current_user),
 ):
     portfolio = session.get(Portfolio, portfolio_id)
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
+    # Vérification de propriété : seul le propriétaire peut ajouter des compétences
+    if portfolio.firebase_uid != user["uid"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Vous n'êtes pas le propriétaire de ce portfolio.",
+        )
     skill = Skill(name=name, level=level, portfolio_id=portfolio_id)
     session.add(skill)
     session.commit()
     return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
 
 
-# Supprimer une compétence
+# Supprimer une compétence (propriétaire uniquement)
 @app.post("/skills/{skill_id}/delete")
-def delete_skill(skill_id: int, session: SessionDep):
+def delete_skill(
+    skill_id: int,
+    session: SessionDep,
+    user: dict = Depends(get_current_user),
+):
     skill = session.get(Skill, skill_id)
     if not skill:
         raise HTTPException(status_code=404, detail="Skill not found")
+    # Vérification de propriété via le portfolio parent
+    portfolio = session.get(Portfolio, skill.portfolio_id)
+    if not portfolio or portfolio.firebase_uid != user["uid"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Vous n'êtes pas le propriétaire de ce portfolio.",
+        )
     portfolio_id = skill.portfolio_id
     session.delete(skill)
     session.commit()
