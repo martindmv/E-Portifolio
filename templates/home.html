@@ -30,8 +30,31 @@
   <div class="card" style="text-align: center; padding: 3rem;">
     <h3>Aucun portfolio disponible.</h3>
     <p style="margin-bottom: 1.5rem;">Commencez par créer votre premier portfolio professionnel.</p>
-    <a href="/portfolios/create" class="btn">Créer un portfolio</a>
+    <!-- Masqué par défaut, affiché seulement si connecté -->
+    <a href="/portfolios/create" id="home-create-link" class="btn" style="display: none;">Créer un portfolio</a>
+    <p id="home-login-hint" style="display: none; color: var(--text-muted); margin-top: 1rem;">
+      <a href="/login" style="color: #a855f7;">Connectez-vous</a> pour créer un portfolio.
+    </p>
   </div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+    // Affiche/masque le lien de création selon l'état de connexion
+    window.addEventListener('auth-state-changed', (e) => {
+        const createLink = document.getElementById('home-create-link');
+        const loginHint = document.getElementById('home-login-hint');
+        if (!createLink) return;
+
+        if (e.detail.user) {
+            createLink.style.display = 'inline-block';
+            if (loginHint) loginHint.style.display = 'none';
+        } else {
+            createLink.style.display = 'none';
+            if (loginHint) loginHint.style.display = 'block';
+        }
+    });
+</script>
 {% endblock %}

@@ -18,6 +18,19 @@
     </div>
   </div>
 
+  <!-- Badge lecture seule (affiché pour les visiteurs) -->
+  <div id="readonly-badge" style="display: none; text-align: center; margin-bottom: 2rem;">
+    <span style="
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      padding: 0.5rem 1.2rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    ">👁️ Mode lecture seule</span>
+  </div>
+
   <div class="portfolio-grid">
     <!-- Colonne de gauche : Compétences -->
     <div class="card delay-1 animate-fade-in" style="opacity: 0;">
@@ -35,15 +48,16 @@
               </span>
             </div>
 
-            <form action="/skills/{{ skill.id }}/delete" method="post">
-              <button type="submit" style="
-          background: #ef4444;
-          border: none;
-          color: white;
-          padding: 0.4rem 0.7rem;
-          border-radius: 8px;
-          cursor: pointer;
-        ">
+            <!-- Bouton supprimer : visible seulement pour le propriétaire -->
+            <form action="/skills/{{ skill.id }}/delete" method="post" class="owner-actions" style="display: none;">
+              <button type="submit" class="owner-delete-btn" style="
+                background: #ef4444;
+                border: none;
+                color: white;
+                padding: 0.4rem 0.7rem;
+                border-radius: 8px;
+                cursor: pointer;
+              ">
                 Supprimer
               </button>
             </form>
@@ -55,19 +69,23 @@
       {% else %}
       <p>Aucune compétence renseignée.</p>
       {% endif %}
-      <form action="/portfolios/{{ portfolio.id }}/skills/" method="post" style="margin-top:1rem;">
-        <div class="form-group">
-          <input type="text" name="name" placeholder="Compétence (ex: Python)" required>
-        </div>
-        <div class="form-group">
-          <select name="level">
-            <option value="Débutant">Débutant</option>
-            <option value="Intermédiaire">Intermédiaire</option>
-            <option value="Avancé">Avancé</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-secondary">+ Ajouter</button>
-      </form>
+
+      <!-- Formulaire d'ajout : visible seulement pour le propriétaire -->
+      <div class="owner-actions" style="display: none;">
+        <form action="/portfolios/{{ portfolio.id }}/skills/" method="post" style="margin-top:1rem;">
+          <div class="form-group">
+            <input type="text" name="name" placeholder="Compétence (ex: Python)" required>
+          </div>
+          <div class="form-group">
+            <select name="level">
+              <option value="Débutant">Débutant</option>
+              <option value="Intermédiaire">Intermédiaire</option>
+              <option value="Avancé">Avancé</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-secondary">+ Ajouter</button>
+        </form>
+      </div>
 
     </div>
 
@@ -115,17 +133,68 @@
 </div>
 {% endblock %}
 
-<!-- Formulaire pour ajouter une compétence -->
-<form action="/portfolios/{{ portfolio.id }}/skills/" method="post" style="margin-top:1rem;">
-  <div class="form-group">
-    <input type="text" name="name" placeholder="Compétence (ex: Python)" required>
-  </div>
-  <div class="form-group">
-    <select name="level">
-      <option value="Débutant">Débutant</option>
-      <option value="Intermédiaire">Intermédiaire</option>
-      <option value="Avancé">Avancé</option>
-    </select>
-  </div>
-  <button type="submit" class="btn btn-secondary">+ Ajouter</button>
-</form>
+{% block scripts %}
+<script type="module">
+    import { getAuth } from "firebase/auth";
+
+    // UID du propriétaire du portfolio, injecté par Jinja depuis le back-end
+    const OWNER_UID = "{{ owner_uid }}";
+    const auth = getAuth();
+
+    // Intercepter les formulaires de suppression pour ajouter le token
+    function setupOwnerForms() {
+        document.querySelectorAll('.owner-actions form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const user = auth.currentUser;
+                if (!user) return;
+
+                const btn = form.querySelector('button[type="submit"]');
+                btn.disabled = true;
+
+                try {
+                    const token = await user.getIdToken();
+                    const formData = new FormData(form);
+
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (response.ok || response.redirected) {
+                        window.location.reload();
+                    } else {
+                        const data = await response.json();
+                        alert(data.detail || 'Erreur.');
+                        btn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    btn.disabled = false;
+                }
+            });
+        });
+    }
+
+    // Réagir au changement d'état d'authentification
+    window.addEventListener('auth-state-changed', (e) => {
+        const ownerElements = document.querySelectorAll('.owner-actions');
+        const readonlyBadge = document.getElementById('readonly-badge');
+        const user = e.detail.user;
+
+        if (user && user.uid === OWNER_UID) {
+            // Propriétaire : afficher les contrôles d'édition
+            ownerElements.forEach(el => el.style.display = 'block');
+            readonlyBadge.style.display = 'none';
+            setupOwnerForms();
+        } else {
+            // Visiteur ou déconnecté : masquer les contrôles, afficher badge
+            ownerElements.forEach(el => el.style.display = 'none');
+            if (OWNER_UID) {
+                readonlyBadge.style.display = 'block';
+            }
+        }
+    });
+</script>
+{% endblock %}

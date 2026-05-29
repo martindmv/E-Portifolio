@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion - E-Portfolios{% endblock %}
+
+{% block content %}
+<div class="auth-container animate-fade-in">
+
+    <!-- ===== Formulaire de connexion / inscription ===== -->
+    <div class="auth-card" id="auth-card">
+        <div class="auth-header">
+            <h1 class="auth-title">Bienvenue</h1>
+            <p class="auth-subtitle">Connectez-vous pour gérer vos portfolios</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">
+                Connexion
+            </button>
+            <button class="auth-tab" id="tab-register" onclick="switchTab('register')">
+                Inscription
+            </button>
+        </div>
+
+        <div id="auth-message" class="auth-message" style="display:none;"></div>
+
+        <!-- Formulaire de connexion -->
+        <form id="login-form" class="auth-form">
+            <div class="form-group">
+                <label for="login-email">Adresse email</label>
+                <input type="email" id="login-email" placeholder="votre@email.com" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="login-password">Mot de passe</label>
+                <input type="password" id="login-password" placeholder="••••••••" required
+                    autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn auth-submit-btn" id="login-submit">
+                Se connecter →
+            </button>
+        </form>
+
+        <!-- Formulaire d'inscription (masqué par défaut) -->
+        <form id="register-form" class="auth-form" style="display:none;">
+            <div class="form-group">
+                <label for="register-email">Adresse email</label>
+                <input type="email" id="register-email" placeholder="votre@email.com" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="register-password">Mot de passe</label>
+                <input type="password" id="register-password" placeholder="Minimum 6 caractères" required minlength="6"
+                    autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label for="register-confirm">Confirmer le mot de passe</label>
+                <input type="password" id="register-confirm" placeholder="••••••••" required minlength="6"
+                    autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn auth-submit-btn" id="register-submit">
+                Créer mon compte →
+            </button>
+        </form>
+    </div>
+
+    <!-- ===== Panel affiché après connexion réussie ===== -->
+    <div class="auth-card" id="auth-logged-in" style="display:none;">
+        <div style="text-align:center;">
+            <div class="auth-avatar-success">✅</div>
+            <h2 style="margin-top: 1rem; font-size: 1.5rem;">Connecté avec succès !</h2>
+            <p id="logged-in-email" style="color: var(--text-muted); margin-top: 0.5rem;"></p>
+        </div>
+
+        <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
+            <a href="/portfolios/" class="btn" style="width:100%; text-align:center;">
+                Accéder aux portfolios →
+            </a>
+            <button onclick="handleLogout()" class="btn btn-secondary" style="width:100%; color: #ef4444;">
+                Déconnexion
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+    import {
+        getAuth,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        signOut,
+        onAuthStateChanged
+    } from "firebase/auth";
+
+    const auth = getAuth();
+
+    // ========================================================
+    // Gestion des onglets Connexion / Inscription
+    // ========================================================
+    window.switchTab = function (tab) {
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const tabLogin = document.getElementById('tab-login');
+        const tabRegister = document.getElementById('tab-register');
+        const message = document.getElementById('auth-message');
+
+        // Masquer le message d'erreur au changement d'onglet
+        message.style.display = 'none';
+
+        if (tab === 'login') {
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            tabLogin.classList.add('active');
+            tabRegister.classList.remove('active');
+        } else {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+            tabLogin.classList.remove('active');
+            tabRegister.classList.add('active');
+        }
+    };
+
+    // ========================================================
+    // Affichage des messages d'erreur / succès
+    // ========================================================
+    function showMessage(text, type = 'error') {
+        const el = document.getElementById('auth-message');
+        el.textContent = text;
+        el.className = `auth-message ${type}`;
+        el.style.display = 'block';
+    }
+
+    // Traduction des codes d'erreur Firebase en français
+    function translateFirebaseError(code) {
+        const errors = {
+            'auth/email-already-in-use': 'Cet email est déjà utilisé par un autre compte.',
+            'auth/invalid-email': 'Adresse email invalide.',
+            'auth/operation-not-allowed': 'Opération non autorisée. Activez l\'authentification Email/Mot de passe dans Firebase.',
+            'auth/weak-password': 'Le mot de passe doit contenir au moins 6 caractères.',
+            'auth/user-disabled': 'Ce compte a été désactivé.',
+            'auth/user-not-found': 'Aucun compte trouvé avec cet email.',
+            'auth/wrong-password': 'Mot de passe incorrect.',
+            'auth/invalid-credential': 'Email ou mot de passe incorrect.',
+            'auth/too-many-requests': 'Trop de tentatives. Veuillez réessayer plus tard.',
+        };
+        return errors[code] || `Erreur : ${code}`;
+    }
+
+    // ========================================================
+    // Observateur de l'état d'authentification
+    // ========================================================
+    onAuthStateChanged(auth, (user) => {
+        const authCard = document.getElementById('auth-card');
+        const loggedInCard = document.getElementById('auth-logged-in');
+
+        if (user) {
+            authCard.style.display = 'none';
+            loggedInCard.style.display = 'block';
+            document.getElementById('logged-in-email').textContent = user.email;
+        } else {
+            authCard.style.display = 'block';
+            loggedInCard.style.display = 'none';
+        }
+    });
+
+    // ========================================================
+    // Connexion (signInWithEmailAndPassword)
+    // ========================================================
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('login-submit');
+        btn.disabled = true;
+        btn.textContent = 'Connexion en cours...';
+
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+            // ✅ Récupération du token JWT — c'est CE token qu'on envoie à FastAPI
+            const token = await userCredential.user.getIdToken();
+            console.log("✅ Token JWT récupéré :", token);
+
+            showMessage('Connexion réussie ! Redirection...', 'success');
+
+            // Redirection vers /portfolios/
+            setTimeout(() => {
+                window.location.href = '/portfolios/';
+            }, 1000);
+        } catch (error) {
+            showMessage(translateFirebaseError(error.code));
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Se connecter →';
+        }
+    });
+
+    // ========================================================
+    // Inscription (createUserWithEmailAndPassword)
+    // ========================================================
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('register-submit');
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const confirm = document.getElementById('register-confirm').value;
+
+        // Vérification côté client
+        if (password !== confirm) {
+            showMessage('Les mots de passe ne correspondent pas.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Création en cours...';
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+            // ✅ Récupération du token JWT après inscription
+            const token = await userCredential.user.getIdToken();
+            console.log("✅ Compte créé. Token JWT :", token);
+
+            showMessage('Compte créé avec succès ! Redirection...', 'success');
+
+            setTimeout(() => {
+                window.location.href = '/portfolios/';
+            }, 1000);
+        } catch (error) {
+            showMessage(translateFirebaseError(error.code));
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Créer mon compte →';
+        }
+    });
+
+    // ========================================================
+    // Déconnexion (signOut)
+    // ========================================================
+    window.handleLogout = async function () {
+        try {
+            await signOut(auth);
+            window.location.href = '/login';
+        } catch (error) {
+            console.error('Erreur de déconnexion:', error);
+        }
+    };
+</script>
+{% endblock %}
