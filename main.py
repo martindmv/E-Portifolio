@@ -1,12 +1,18 @@
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()  # Charge les variables depuis .env (développement local)
+
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from typing import Annotated
 from contextlib import asynccontextmanager
-import sqlite3
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Form
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
+from sqlalchemy import inspect as sa_inspect, text
 from fastapi.responses import RedirectResponse
 from auth import get_current_user
 
@@ -74,11 +80,24 @@ class Portfolio(SQLModel, table=True):
     firebase_uid: str | None = Field(default=None, index=True)  # ID utilisateur Firebase
 
 
-sqlite_file_name = "database_portfolio.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+# ---------- Connexion dynamique à la base de données ----------
+# En production (Render) : DATABASE_URL est définie → PostgreSQL
+# En local                : DATABASE_URL absente   → SQLite
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-connect_args = {"check_same_thread": False}
-engine = create_engine(sqlite_url, connect_args=connect_args)
+if DATABASE_URL:
+    # Render fournit parfois une URL commençant par "postgres://"
+    # SQLAlchemy 1.4+ exige "postgresql://"
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    engine = create_engine(DATABASE_URL, echo=False)
+    print("✅ Connexion PostgreSQL (production)")
+else:
+    sqlite_file_name = "database_portfolio.db"
+    sqlite_url = f"sqlite:///{sqlite_file_name}"
+    connect_args = {"check_same_thread": False}
+    engine = create_engine(sqlite_url, connect_args=connect_args)
+    print("✅ Connexion SQLite (développement local)")
 
 
 def create_db_and_tables():
@@ -97,17 +116,14 @@ SessionDep = Annotated[Session, Depends(get_session)]
 async def lifespan(app: FastAPI):
     # Création de la base de données au démarrage
     create_db_and_tables()
-    # Migration : ajouter la colonne firebase_uid si elle n'existe pas encore
+    # Migration portable (SQLite + PostgreSQL) : ajouter firebase_uid si absent
     try:
-        conn = sqlite3.connect(sqlite_file_name)
-        cursor = conn.cursor()
-        cursor.execute("PRAGMA table_info(portfolio)")
-        columns = [col[1] for col in cursor.fetchall()]
+        inspector = sa_inspect(engine)
+        columns = [col["name"] for col in inspector.get_columns("portfolio")]
         if "firebase_uid" not in columns:
-            cursor.execute("ALTER TABLE portfolio ADD COLUMN firebase_uid TEXT")
-            conn.commit()
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE portfolio ADD COLUMN firebase_uid TEXT"))
             print("✅ Migration : colonne 'firebase_uid' ajoutée à la table 'portfolio'")
-        conn.close()
     except Exception as e:
         print(f"⚠️ Migration firebase_uid : {e}")
     yield
