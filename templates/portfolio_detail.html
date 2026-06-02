@@ -8,12 +8,20 @@
     <h1>{{ portfolio.name }}</h1>
     <p class="meta">{{ portfolio.formation }}</p>
 
-    <!-- Bouton modifier -->
-    <a href="/portfolios/{{ portfolio.id }}/edit" class="btn btn-secondary">
-      ✏️ Modifier
-    </a>
+    <!-- Boutons visibles seulement pour le propriétaire -->
+    <div class="owner-actions" style="display: none;">
+      <a href="/portfolios/{{ portfolio.id }}/edit" class="btn btn-secondary">
+        ✏️ Modifier
+      </a>
+      <form action="/portfolios/{{ portfolio.id }}/delete" method="post" class="owner-actions" style="display:inline;">
+        <button type="submit"
+          style="background:#ef4444; border:none; color:white; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
+          🗑️ Supprimer
+        </button>
+      </form>
+    </div>
 
-    <div class="detail-links">
+    <div class="detail-links" style="margin-top: 1.5rem;">
       {% if portfolio.github %}
       <a href="{{ portfolio.github }}" target="_blank">🐙 GitHub</a>
       {% endif %}
@@ -22,169 +30,227 @@
       {% endif %}
     </div>
   </div>
-</div>
 
-<div class="detail-links" style="margin-top: 1.5rem;">
-  {% if portfolio.github %}
-  <a href="{{ portfolio.github }}" target="_blank">🐙 GitHub</a>
-  {% endif %}
-  {% if portfolio.linkedin %}
-  <a href="{{ portfolio.linkedin }}" target="_blank">💼 LinkedIn</a>
-  {% endif %}
-</div>
-</div>
+  <!-- Badge lecture seule -->
+  <div id="readonly-badge" style="display: none; text-align: center; margin-bottom: 2rem;">
+    <span style="
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      padding: 0.5rem 1.2rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;">👁️ Mode lecture seule</span>
+  </div>
 
-<div class="portfolio-grid">
+  <div class="portfolio-grid">
 
-  <!-- ===== COLONNE GAUCHE : Compétences ===== -->
-  <div class="card delay-1 animate-fade-in" style="opacity: 0;">
-    <h2>🛠️ Compétences</h2>
-
-    {% if portfolio.skill %}
-    <ul style="list-style-type: none; padding: 0;">
-      {% for skill in portfolio.skill %}
-      <li style="margin-bottom: 0.8rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <strong>{{ skill.name }}</strong>
-            <span style="color: #a855f7; margin-left: 10px;">{{ skill.level }}</span>
+    <!-- COLONNE GAUCHE : Compétences -->
+    <div class="card delay-1 animate-fade-in" style="opacity: 0;">
+      <h2>🛠️ Compétences</h2>
+      {% if portfolio.skill %}
+      <ul style="list-style-type: none; padding: 0;">
+        {% for skill in portfolio.skill %}
+        <li style="margin-bottom: 0.8rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong>{{ skill.name }}</strong>
+              <span style="color: #a855f7; margin-left: 10px;">{{ skill.level }}</span>
+            </div>
+            <form action="/skills/{{ skill.id }}/delete" method="post" class="owner-actions" style="display: none;">
+              <button type="submit"
+                style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
+                Supprimer
+              </button>
+            </form>
           </div>
-          <form action="/skills/{{ skill.id }}/delete" method="post">
-            <button type="submit"
-              style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
-              Supprimer
-            </button>
-          </form>
-        </div>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p>Aucune compétence renseignée.</p>
-    {% endif %}
-
-    <!-- Formulaire ajout compétence -->
-    <form action="/portfolios/{{ portfolio.id }}/skills/" method="post" style="margin-top:1rem;">
-      <div class="form-group">
-        <input type="text" name="name" placeholder="Compétence (ex: Python)" required>
-      </div>
-      <div class="form-group">
-        <select name="level">
-          <option value="Débutant">Débutant</option>
-          <option value="Intermédiaire">Intermédiaire</option>
-          <option value="Avancé">Avancé</option>
-        </select>
-      </div>
-      <button type="submit" class="btn btn-secondary">+ Ajouter</button>
-    </form>
-
-  </div>
-  <!-- ===== FIN COLONNE GAUCHE ===== -->
-
-
-  <!-- ===== COLONNE DROITE : Expériences & Projets ===== -->
-  <div style="grid-column: span 2;">
-
-    <!-- Carte Expériences -->
-    <div class="card delay-2 animate-fade-in" style="opacity: 0; margin-bottom: 1.5rem;">
-      <h2>💼 Expériences</h2>
-
-      {% if portfolio.experience %}
-      {% for exp in portfolio.experience %}
-      <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="margin-bottom: 0.2rem;">{{ exp.role }} chez <span style="color: #6366f1;">{{ exp.company
-              }}</span></h3>
-          <form action="/experiences/{{ exp.id }}/delete" method="post">
-            <button type="submit"
-              style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
-              Supprimer
-            </button>
-          </form>
-        </div>
-        <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">⏳ {{ exp.duration }}</p>
-        {% if exp.description %}
-        <p style="color: var(--text-main);">{{ exp.description }}</p>
-        {% endif %}
-      </div>
-      {% endfor %}
+        </li>
+        {% endfor %}
+      </ul>
       {% else %}
-      <p>Aucune expérience renseignée.</p>
+      <p>Aucune compétence renseignée.</p>
       {% endif %}
 
-      <!-- Formulaire ajout expérience -->
-      <form action="/portfolios/{{ portfolio.id }}/experiences/" method="post" style="margin-top:1rem;">
-        <div class="form-group">
-          <input type="text" name="name" placeholder="Nom de l'expérience" required>
-        </div>
-        <div class="form-group">
-          <input type="text" name="company" placeholder="Entreprise" required>
-        </div>
-        <div class="form-group">
-          <input type="text" name="role" placeholder="Poste / Rôle" required>
-        </div>
-        <div class="form-group">
-          <input type="text" name="duration" placeholder="Durée (ex: 6 mois)" required>
-        </div>
-        <div class="form-group">
-          <textarea name="description" placeholder="Description (optionnel)" rows="3"></textarea>
-        </div>
-        <button type="submit" class="btn btn-secondary">+ Ajouter</button>
-      </form>
-
+      <div class="owner-actions" style="display: none;">
+        <form action="/portfolios/{{ portfolio.id }}/skills/" method="post" style="margin-top:1rem;">
+          <div class="form-group">
+            <input type="text" name="name" placeholder="Compétence (ex: Python)" required>
+          </div>
+          <div class="form-group">
+            <select name="level">
+              <option value="Débutant">Débutant</option>
+              <option value="Intermédiaire">Intermédiaire</option>
+              <option value="Avancé">Avancé</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-secondary">+ Ajouter</button>
+        </form>
+      </div>
     </div>
-    <!-- Fin carte Expériences -->
+    <!-- FIN COLONNE GAUCHE -->
 
+    <!-- COLONNE DROITE : Expériences & Projets -->
+    <div style="grid-column: span 2;">
 
-    <!-- Carte Projets -->
-    <div class="card delay-3 animate-fade-in" style="opacity: 0;">
-      <h2>🚀 Projets</h2>
+      <!-- Carte Expériences -->
+      <div class="card delay-2 animate-fade-in" style="opacity: 0; margin-bottom: 1.5rem;">
+        <h2>💼 Expériences</h2>
+        {% if portfolio.experience %}
+        {% for exp in portfolio.experience %}
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin-bottom: 0.2rem;">{{ exp.role }} chez <span style="color: #6366f1;">{{ exp.company
+                }}</span></h3>
+            <form action="/experiences/{{ exp.id }}/delete" method="post" class="owner-actions" style="display: none;">
+              <button type="submit"
+                style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
+                Supprimer
+              </button>
+            </form>
+          </div>
+          <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">⏳ {{ exp.duration }}</p>
+          {% if exp.description %}
+          <p style="color: var(--text-main);">{{ exp.description }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>Aucune expérience renseignée.</p>
+        {% endif %}
 
-      {% if portfolio.project %}
-      {% for proj in portfolio.project %}
-      <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="margin-bottom: 0.5rem;">{{ proj.name }}</h3>
-          <form action="/projects/{{ proj.id }}/delete" method="post">
-            <button type="submit"
-              style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
-              Supprimer
-            </button>
+        <div class="owner-actions" style="display: none;">
+          <form action="/portfolios/{{ portfolio.id }}/experiences/" method="post" style="margin-top:1rem;">
+            <div class="form-group">
+              <input type="text" name="name" placeholder="Nom de l'expérience" required>
+            </div>
+            <div class="form-group">
+              <input type="text" name="company" placeholder="Entreprise" required>
+            </div>
+            <div class="form-group">
+              <input type="text" name="role" placeholder="Poste / Rôle" required>
+            </div>
+            <div class="form-group">
+              <input type="text" name="duration" placeholder="Durée (ex: 6 mois)" required>
+            </div>
+            <div class="form-group">
+              <textarea name="description" placeholder="Description (optionnel)" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-secondary">+ Ajouter</button>
           </form>
         </div>
-        {% if proj.description %}
-        <p style="color: var(--text-main);">{{ proj.description }}</p>
-        {% endif %}
-        {% if proj.link %}
-        <a href="{{ proj.link }}" target="_blank" class="btn btn-secondary"
-          style="padding: 0.4rem 0.8rem; font-size: 0.9rem; margin-top: 0.5rem;">Voir le projet</a>
-        {% endif %}
       </div>
-      {% endfor %}
-      {% else %}
-      <p>Aucun projet renseigné.</p>
-      {% endif %}
+      <!-- Fin carte Expériences -->
 
-      <!-- Formulaire ajout projet -->
-      <form action="/portfolios/{{ portfolio.id }}/projects/" method="post" style="margin-top:1rem;">
-        <div class="form-group">
-          <input type="text" name="name" placeholder="Nom du projet" required>
+
+      <!-- Carte Projets -->
+      <div class="card delay-3 animate-fade-in" style="opacity: 0;">
+        <h2>🚀 Projets</h2>
+        {% if portfolio.project %}
+        {% for proj in portfolio.project %}
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin-bottom: 0.5rem;">{{ proj.name }}</h3>
+            <form action="/projects/{{ proj.id }}/delete" method="post" class="owner-actions" style="display: none;">
+              <button type="submit"
+                style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
+                Supprimer
+              </button>
+            </form>
+          </div>
+          {% if proj.description %}
+          <p style="color: var(--text-main);">{{ proj.description }}</p>
+          {% endif %}
+          {% if proj.link %}
+          <a href="{{ proj.link }}" target="_blank" class="btn btn-secondary"
+            style="padding: 0.4rem 0.8rem; font-size: 0.9rem; margin-top: 0.5rem;">Voir le projet</a>
+          {% endif %}
         </div>
-        <div class="form-group">
-          <textarea name="description" placeholder="Description (optionnel)" rows="3"></textarea>
+        {% endfor %}
+        {% else %}
+        <p>Aucun projet renseigné.</p>
+        {% endif %}
+
+        <div class="owner-actions" style="display: none;">
+          <form action="/portfolios/{{ portfolio.id }}/projects/" method="post" style="margin-top:1rem;">
+            <div class="form-group">
+              <input type="text" name="name" placeholder="Nom du projet" required>
+            </div>
+            <div class="form-group">
+              <textarea name="description" placeholder="Description (optionnel)" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <input type="url" name="link" placeholder="Lien du projet (optionnel)">
+            </div>
+            <button type="submit" class="btn btn-secondary">+ Ajouter</button>
+          </form>
         </div>
-        <div class="form-group">
-          <input type="url" name="link" placeholder="Lien du projet (optionnel)">
-        </div>
-        <button type="submit" class="btn btn-secondary">+ Ajouter</button>
-      </form>
+      </div>
+      <!-- Fin carte Projets -->
 
     </div>
-    <!-- Fin carte Projets -->
+    <!-- FIN COLONNE DROITE -->
 
   </div>
-  <!-- ===== FIN COLONNE DROITE ===== -->
+</div>
+{% endblock %}
 
-</div>
-</div>
+
+{% block scripts %}
+<script type="module">
+  import { getAuth } from "firebase/auth";
+
+  const OWNER_UID = "{{ owner_uid }}";
+  const auth = getAuth();
+
+  function setupOwnerForms() {
+    document.querySelectorAll('.owner-actions form').forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const user = auth.currentUser;
+        if (!user) return;
+        const btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        try {
+          const token = await user.getIdToken();
+          const formData = new FormData(form);
+          const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            if (form.action.includes('/portfolios/') && form.action.includes('/delete')) {
+              window.location.href = '/portfolios/';
+            } else {
+              window.location.reload();
+            }
+          } else {
+            const data = await response.json();
+            alert(data.detail || 'Erreur.');
+            btn.disabled = false;
+          }
+        } catch (error) {
+          console.error('Erreur:', error);
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  window.addEventListener('auth-state-changed', (e) => {
+    const ownerElements = document.querySelectorAll('.owner-actions');
+    const readonlyBadge = document.getElementById('readonly-badge');
+    const user = e.detail.user;
+    if (user && user.uid === OWNER_UID) {
+      ownerElements.forEach(el => el.style.display = 'block');
+      readonlyBadge.style.display = 'none';
+      setupOwnerForms();
+    } else {
+      ownerElements.forEach(el => el.style.display = 'none');
+      if (OWNER_UID) {
+        readonlyBadge.style.display = 'block';
+      }
+    }
+  });
+</script>
 {% endblock %}
