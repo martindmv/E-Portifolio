@@ -1,25 +1,68 @@
-# E-Portfolio 
+# 🎓 E-Portfolio
 
-This site allows to create E-Portfolios for the purpose of highlight our competencies . It can be the formations that we have folowed , the projets that we have realised during the last semester , etc ... 
+**Live Demonstration:** https://e-portifolio-4zsc.onrender.com/portfolios
 
-# How to use it :
-- Create a virtual environment --> On Windows : py -m venv env
-- Install the requirements --> pip install -r requirements.py
-- Run main.py
-- If the code doesn't send an URL http when you are running "main.py", you may run the following command "uvicorn main:app --reload" into your terminal or "fastapi dev"
+## 📖 About The Project
+This web application allows users to create and manage E-Portfolios to highlight their competencies. It serves as a digital resume designed to showcase:
+* Personal Information
+* Formations & Education
+* Competencies & Skills
+* Professional Experiences
+* Academic or Personal Projects
+* Social Links (GitHub, LinkedIn)
 
-# Technology : FastAPI
+## 🛠️ Technology Stack
+* **Backend Framework:** FastAPI (Python)
+* **ORM:** SQLAlchemy
+* **Database:** PostgreSQL (Production) / SQLite (Local Development)
+* **Storage:** Firebase (for image and media storage)
+* **Hosting & CI/CD:** Render.com
 
+---
 
+## 💻 Local Development Setup
+Follow these instructions to run the project locally on your machine.
 
-# What is going to be displayed :
+### 1. Prerequisites
+* Python 3.8+ installed on your machine.
+* A Firebase account and project set up.
 
-Name
-Formation
-Competences
-Experiences
-Projects
-Link Github and Linkedin
-Profile Picture
+### 2. Environment Setup
+Clone the repository and navigate to the project folder. Create and activate a virtual environment:
 
+**On Windows:**
+```bash
+py -m venv env
+.\env\Scripts\activate
+```
 
+*(On Mac/Linux: `python3 -m venv env` then `source env/bin/activate`)*
+
+Install the required dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Secrets & Environment Variables 🔑
+For security reasons, sensitive keys are not tracked on GitHub. You must configure them locally:
+
+1. **Database:** The application uses SQLite by default for local development. To connect to a remote PostgreSQL database, create a `.env` file at the root of the project and add: `DATABASE_URL=your_postgres_connection_url`.
+2. **Firebase Configuration:** Download your Firebase service account private key from the Firebase Console. Place the file at the root of the project and rename it exactly to `serviceAccountKey.json`. *(Note: This file is ignored by Git and will not be pushed).*
+
+### 4. Run the Application
+Start the local server using Uvicorn:
+```bash
+uvicorn main:app --reload
+```
+*(Alternatively, you can run `fastapi dev`)*
+
+Once running, the API and documentation will be accessible at `http://localhost:8000`.
+
+---
+
+## 🚀 Deployment & CI/CD (Production)
+This application is fully configured for continuous integration and deployment (CI/CD) on **Render.com**.
+
+* **Automatic Deployments:** Any code pushed or merged into the `master` branch on GitHub automatically triggers a zero-downtime deployment on Render.
+* **Database Persistence:** Production data is safely stored on a dedicated Render PostgreSQL database, ensuring no data is lost during server sleeps or restarts.
+* **Secret Management:** Production credentials (`DATABASE_URL` and the Firebase `serviceaccountkey.json`) are securely injected into the build using Render's "Environment Variables" and "Secret Files" configurations.
