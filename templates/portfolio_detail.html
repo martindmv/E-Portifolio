@@ -8,6 +8,19 @@
     <h1>{{ portfolio.name }}</h1>
     <p class="meta">{{ portfolio.formation }}</p>
 
+    <!-- Boutons visibles seulement pour le propriétaire -->
+    <div class="owner-actions" style="display: none;">
+      <a href="/portfolios/{{ portfolio.id }}/edit" class="btn btn-secondary">
+        ✏️ Modifier
+      </a>
+      <form action="/portfolios/{{ portfolio.id }}/delete" method="post" class="owner-actions" style="display:inline;">
+        <button type="submit"
+          style="background:#ef4444; border:none; color:white; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
+          🗑️ Supprimer
+        </button>
+      </form>
+    </div>
+
     <div class="detail-links" style="margin-top: 1.5rem;">
       {% if portfolio.github %}
       <a href="{{ portfolio.github }}" target="_blank">🐙 GitHub</a>
@@ -18,7 +31,7 @@
     </div>
   </div>
 
-  <!-- Badge lecture seule (affiché pour les visiteurs) -->
+  <!-- Badge lecture seule -->
   <div id="readonly-badge" style="display: none; text-align: center; margin-bottom: 2rem;">
     <span style="
       background: rgba(99, 102, 241, 0.15);
@@ -27,12 +40,12 @@
       padding: 0.5rem 1.2rem;
       border-radius: 20px;
       font-size: 0.85rem;
-      font-weight: 500;
-    ">👁️ Mode lecture seule</span>
+      font-weight: 500;">👁️ Mode lecture seule</span>
   </div>
 
   <div class="portfolio-grid">
-    <!-- Colonne de gauche : Compétences -->
+
+    <!-- COLONNE GAUCHE : Compétences -->
     <div class="card delay-1 animate-fade-in" style="opacity: 0;">
       <h2>🛠️ Compétences</h2>
       {% if portfolio.skill %}
@@ -40,28 +53,16 @@
         {% for skill in portfolio.skill %}
         <li style="margin-bottom: 0.8rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-
             <div>
               <strong>{{ skill.name }}</strong>
-              <span style="color: #a855f7; margin-left: 10px;">
-                {{ skill.level }}
-              </span>
+              <span style="color: #a855f7; margin-left: 10px;">{{ skill.level }}</span>
             </div>
-
-            <!-- Bouton supprimer : visible seulement pour le propriétaire -->
             <form action="/skills/{{ skill.id }}/delete" method="post" class="owner-actions" style="display: none;">
-              <button type="submit" class="owner-delete-btn" style="
-                background: #ef4444;
-                border: none;
-                color: white;
-                padding: 0.4rem 0.7rem;
-                border-radius: 8px;
-                cursor: pointer;
-              ">
+              <button type="submit"
+                style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
                 Supprimer
               </button>
             </form>
-
           </div>
         </li>
         {% endfor %}
@@ -70,7 +71,6 @@
       <p>Aucune compétence renseignée.</p>
       {% endif %}
 
-      <!-- Formulaire d'ajout : visible seulement pour le propriétaire -->
       <div class="owner-actions" style="display: none;">
         <form action="/portfolios/{{ portfolio.id }}/skills/" method="post" style="margin-top:1rem;">
           <div class="form-group">
@@ -86,18 +86,28 @@
           <button type="submit" class="btn btn-secondary">+ Ajouter</button>
         </form>
       </div>
-
     </div>
+    <!-- FIN COLONNE GAUCHE -->
 
-    <!-- Colonne centrale/droite : Expériences & Projets -->
+    <!-- COLONNE DROITE : Expériences & Projets -->
     <div style="grid-column: span 2;">
+
+      <!-- Carte Expériences -->
       <div class="card delay-2 animate-fade-in" style="opacity: 0; margin-bottom: 1.5rem;">
         <h2>💼 Expériences</h2>
         {% if portfolio.experience %}
         {% for exp in portfolio.experience %}
         <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
-          <h3 style="margin-bottom: 0.2rem;">{{ exp.role }} chez <span style="color: #6366f1;">{{ exp.company }}</span>
-          </h3>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin-bottom: 0.2rem;">{{ exp.role }} chez <span style="color: #6366f1;">{{ exp.company
+                }}</span></h3>
+            <form action="/experiences/{{ exp.id }}/delete" method="post" class="owner-actions" style="display: none;">
+              <button type="submit"
+                style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
+                Supprimer
+              </button>
+            </form>
+          </div>
           <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">⏳ {{ exp.duration }}</p>
           {% if exp.description %}
           <p style="color: var(--text-main);">{{ exp.description }}</p>
@@ -107,14 +117,46 @@
         {% else %}
         <p>Aucune expérience renseignée.</p>
         {% endif %}
-      </div>
 
+        <div class="owner-actions" style="display: none;">
+          <form action="/portfolios/{{ portfolio.id }}/experiences/" method="post" style="margin-top:1rem;">
+            <div class="form-group">
+              <input type="text" name="name" placeholder="Nom de l'expérience" required>
+            </div>
+            <div class="form-group">
+              <input type="text" name="company" placeholder="Entreprise" required>
+            </div>
+            <div class="form-group">
+              <input type="text" name="role" placeholder="Poste / Rôle" required>
+            </div>
+            <div class="form-group">
+              <input type="text" name="duration" placeholder="Durée (ex: 6 mois)" required>
+            </div>
+            <div class="form-group">
+              <textarea name="description" placeholder="Description (optionnel)" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-secondary">+ Ajouter</button>
+          </form>
+        </div>
+      </div>
+      <!-- Fin carte Expériences -->
+
+
+      <!-- Carte Projets -->
       <div class="card delay-3 animate-fade-in" style="opacity: 0;">
         <h2>🚀 Projets</h2>
         {% if portfolio.project %}
         {% for proj in portfolio.project %}
         <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border);">
-          <h3 style="margin-bottom: 0.5rem;">{{ proj.name }}</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin-bottom: 0.5rem;">{{ proj.name }}</h3>
+            <form action="/projects/{{ proj.id }}/delete" method="post" class="owner-actions" style="display: none;">
+              <button type="submit"
+                style="background:#ef4444; border:none; color:white; padding:0.4rem 0.7rem; border-radius:8px; cursor:pointer;">
+                Supprimer
+              </button>
+            </form>
+          </div>
           {% if proj.description %}
           <p style="color: var(--text-main);">{{ proj.description }}</p>
           {% endif %}
@@ -127,74 +169,88 @@
         {% else %}
         <p>Aucun projet renseigné.</p>
         {% endif %}
+
+        <div class="owner-actions" style="display: none;">
+          <form action="/portfolios/{{ portfolio.id }}/projects/" method="post" style="margin-top:1rem;">
+            <div class="form-group">
+              <input type="text" name="name" placeholder="Nom du projet" required>
+            </div>
+            <div class="form-group">
+              <textarea name="description" placeholder="Description (optionnel)" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <input type="url" name="link" placeholder="Lien du projet (optionnel)">
+            </div>
+            <button type="submit" class="btn btn-secondary">+ Ajouter</button>
+          </form>
+        </div>
       </div>
+      <!-- Fin carte Projets -->
+
     </div>
+    <!-- FIN COLONNE DROITE -->
+
   </div>
 </div>
 {% endblock %}
 
+
 {% block scripts %}
 <script type="module">
-    import { getAuth } from "firebase/auth";
+  import { getAuth } from "firebase/auth";
 
-    // UID du propriétaire du portfolio, injecté par Jinja depuis le back-end
-    const OWNER_UID = "{{ owner_uid }}";
-    const auth = getAuth();
+  const OWNER_UID = "{{ owner_uid }}";
+  const auth = getAuth();
 
-    // Intercepter les formulaires de suppression pour ajouter le token
-    function setupOwnerForms() {
-        document.querySelectorAll('.owner-actions form').forEach(form => {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const user = auth.currentUser;
-                if (!user) return;
-
-                const btn = form.querySelector('button[type="submit"]');
-                btn.disabled = true;
-
-                try {
-                    const token = await user.getIdToken();
-                    const formData = new FormData(form);
-
-                    const response = await fetch(form.action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    if (response.ok || response.redirected) {
-                        window.location.reload();
-                    } else {
-                        const data = await response.json();
-                        alert(data.detail || 'Erreur.');
-                        btn.disabled = false;
-                    }
-                } catch (error) {
-                    console.error('Erreur:', error);
-                    btn.disabled = false;
-                }
-            });
-        });
-    }
-
-    // Réagir au changement d'état d'authentification
-    window.addEventListener('auth-state-changed', (e) => {
-        const ownerElements = document.querySelectorAll('.owner-actions');
-        const readonlyBadge = document.getElementById('readonly-badge');
-        const user = e.detail.user;
-
-        if (user && user.uid === OWNER_UID) {
-            // Propriétaire : afficher les contrôles d'édition
-            ownerElements.forEach(el => el.style.display = 'block');
-            readonlyBadge.style.display = 'none';
-            setupOwnerForms();
-        } else {
-            // Visiteur ou déconnecté : masquer les contrôles, afficher badge
-            ownerElements.forEach(el => el.style.display = 'none');
-            if (OWNER_UID) {
-                readonlyBadge.style.display = 'block';
+  function setupOwnerForms() {
+    document.querySelectorAll('.owner-actions form').forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const user = auth.currentUser;
+        if (!user) return;
+        const btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        try {
+          const token = await user.getIdToken();
+          const formData = new FormData(form);
+          const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            if (form.action.includes('/portfolios/') && form.action.includes('/delete')) {
+              window.location.href = '/portfolios/';
+            } else {
+              window.location.reload();
             }
+          } else {
+            const data = await response.json();
+            alert(data.detail || 'Erreur.');
+            btn.disabled = false;
+          }
+        } catch (error) {
+          console.error('Erreur:', error);
+          btn.disabled = false;
         }
+      });
     });
+  }
+
+  window.addEventListener('auth-state-changed', (e) => {
+    const ownerElements = document.querySelectorAll('.owner-actions');
+    const readonlyBadge = document.getElementById('readonly-badge');
+    const user = e.detail.user;
+    if (user && user.uid === OWNER_UID) {
+      ownerElements.forEach(el => el.style.display = 'block');
+      readonlyBadge.style.display = 'none';
+      setupOwnerForms();
+    } else {
+      ownerElements.forEach(el => el.style.display = 'none');
+      if (OWNER_UID) {
+        readonlyBadge.style.display = 'block';
+      }
+    }
+  });
 </script>
 {% endblock %}

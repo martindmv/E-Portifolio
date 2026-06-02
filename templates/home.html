@@ -23,6 +23,8 @@
 
       <a href="/portfolios/{{ portfolio.id }}" class="btn"
         style="width: 100%; text-align: center; margin-top: 1rem;">Voir les détails →</a>
+
+
     </div>
     {% endfor %}
   </div>
@@ -42,19 +44,19 @@
 
 {% block scripts %}
 <script type="module">
-    // Affiche/masque le lien de création selon l'état de connexion
-    window.addEventListener('auth-state-changed', (e) => {
-        const createLink = document.getElementById('home-create-link');
-        const loginHint = document.getElementById('home-login-hint');
-        if (!createLink) return;
+  // Affiche/masque le lien de création selon l'état de connexion
+  window.addEventListener('auth-state-changed', (e) => {
+    const createLink = document.getElementById('home-create-link');
+    const loginHint = document.getElementById('home-login-hint');
+    if (!createLink) return;
 
-        if (e.detail.user) {
-            createLink.style.display = 'inline-block';
-            if (loginHint) loginHint.style.display = 'none';
-        } else {
-            createLink.style.display = 'none';
-            if (loginHint) loginHint.style.display = 'block';
-        }
-    });
+    if (e.detail.user) {
+      createLink.style.display = 'inline-block';
+      if (loginHint) loginHint.style.display = 'none';
+    } else {
+      createLink.style.display = 'none';
+      if (loginHint) loginHint.style.display = 'block';
+    }
+  });
 </script>
 {% endblock %}

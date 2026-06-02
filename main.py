@@ -77,7 +77,9 @@ class Portfolio(SQLModel, table=True):
     )
     github: str | None
     linkedin: str | None
-    firebase_uid: str | None = Field(default=None, index=True)  # ID utilisateur Firebase
+    firebase_uid: str | None = Field(
+        default=None, index=True
+    )  # ID utilisateur Firebase
 
 
 # ---------- Connexion dynamique à la base de données ----------
@@ -97,6 +99,7 @@ if DATABASE_URL:
     masked_url = DATABASE_URL
     try:
         from urllib.parse import urlparse
+
         parsed = urlparse(DATABASE_URL)
         if parsed.password:
             masked_url = DATABASE_URL.replace(parsed.password, "****")
@@ -178,7 +181,9 @@ async def lifespan(app: FastAPI):
         with Session(engine) as session:
             for table_name in tables:
                 try:
-                    count = session.execute(text(f'SELECT COUNT(*) FROM "{table_name}"')).scalar()
+                    count = session.execute(
+                        text(f'SELECT COUNT(*) FROM "{table_name}"')
+                    ).scalar()
                     print(f"   📋 {table_name} : {count} ligne(s)")
                 except Exception as e:
                     print(f"   ⚠️ {table_name} : erreur de lecture — {e}")
@@ -193,7 +198,9 @@ async def lifespan(app: FastAPI):
         if "firebase_uid" not in columns:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE portfolio ADD COLUMN firebase_uid TEXT"))
-            print("✅ Migration : colonne 'firebase_uid' ajoutée à la table 'portfolio'")
+            print(
+                "✅ Migration : colonne 'firebase_uid' ajoutée à la table 'portfolio'"
+            )
     except Exception as e:
         print(f"⚠️ Migration firebase_uid : {e}")
     yield
@@ -219,7 +226,10 @@ def create_portfolio(
 ):
     # Le portfolio est systématiquement lié au compte Firebase de l'utilisateur
     portfolio = Portfolio(
-        name=name, formation=formation, github=github, linkedin=linkedin,
+        name=name,
+        formation=formation,
+        github=github,
+        linkedin=linkedin,
         firebase_uid=user["uid"],
     )
     session.add(portfolio)
@@ -244,6 +254,46 @@ def read_portfolios_page(
 @app.get("/portfolios/create", response_class=HTMLResponse)
 def create_portfolio_page(request: Request):
     return templates.TemplateResponse(request=request, name="create_portfolio.html")
+
+
+# Page pour éditer un portfolio
+
+
+@app.get("/portfolios/{portfolio_id}/edit", response_class=HTMLResponse)
+def edit_portfolio_page(
+    request: Request,
+    portfolio_id: int,
+    session: SessionDep,
+):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    return templates.TemplateResponse(
+        request=request, name="edit_portfolio.html", context={"portfolio": portfolio}
+    )
+
+
+@app.post("/portfolios/{portfolio_id}/edit")
+def update_portfolio(
+    portfolio_id: int,
+    session: SessionDep,
+    name: str = Form(...),
+    formation: str = Form(...),
+    github: str | None = Form(None),
+    linkedin: str | None = Form(None),
+    user: dict = Depends(get_current_user),
+):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    if portfolio.firebase_uid and portfolio.firebase_uid != user["uid"]:
+        raise HTTPException(status_code=403, detail="Vous n'êtes pas le propriétaire.")
+    portfolio.name = name
+    portfolio.formation = formation
+    portfolio.github = github
+    portfolio.linkedin = linkedin
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -299,7 +349,28 @@ def delete_portfolio(
     return {"ok": True}
 
 
+# supprimer un portfolio
+
+
+@app.post("/portfolios/{portfolio_id}/delete")
+def delete_portfolio_post(
+    portfolio_id: int,
+    session: SessionDep,
+    user: dict = Depends(get_current_user),
+):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    if portfolio.firebase_uid and portfolio.firebase_uid != user["uid"]:
+        raise HTTPException(status_code=403, detail="Vous n'êtes pas le propriétaire.")
+    session.delete(portfolio)
+    session.commit()
+    return {"ok": True}
+
+
 # Ajouter une compétence à un portfolio (propriétaire uniquement)
+
+
 @app.post("/portfolios/{portfolio_id}/skills/")
 def create_skill(
     portfolio_id: int,
@@ -342,5 +413,78 @@ def delete_skill(
         )
     portfolio_id = skill.portfolio_id
     session.delete(skill)
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
+
+
+# Ajouter une expérience
+
+
+@app.post("/portfolios/{portfolio_id}/experiences/")
+def create_experience(
+    portfolio_id: int,
+    session: SessionDep,
+    name: str = Form(...),
+    company: str = Form(...),
+    role: str = Form(...),
+    duration: str = Form(...),
+    description: str | None = Form(None),
+):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    experience = Experience(
+        name=name,
+        company=company,
+        role=role,
+        duration=duration,
+        description=description,
+        portfolio_id=portfolio_id,
+    )
+    session.add(experience)
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
+
+
+# Supprimer une expérience
+@app.post("/experiences/{experience_id}/delete")
+def delete_experience(experience_id: int, session: SessionDep):
+    experience = session.get(Experience, experience_id)
+    if not experience:
+        raise HTTPException(status_code=404, detail="Experience not found")
+    portfolio_id = experience.portfolio_id
+    session.delete(experience)
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
+
+
+# Ajouter un projet
+@app.post("/portfolios/{portfolio_id}/projects/")
+def create_project(
+    portfolio_id: int,
+    session: SessionDep,
+    name: str = Form(...),
+    description: str | None = Form(None),
+    link: str | None = Form(None),
+):
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    project = Project(
+        name=name, description=description, link=link, portfolio_id=portfolio_id
+    )
+    session.add(project)
+    session.commit()
+    return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
+
+
+# Supprimer un projet
+@app.post("/projects/{project_id}/delete")
+def delete_project(project_id: int, session: SessionDep):
+    project = session.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    portfolio_id = project.portfolio_id
+    session.delete(project)
     session.commit()
     return RedirectResponse(url=f"/portfolios/{portfolio_id}", status_code=303)
