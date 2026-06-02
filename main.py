@@ -83,21 +83,71 @@ class Portfolio(SQLModel, table=True):
 # ---------- Connexion dynamique à la base de données ----------
 # En production (Render) : DATABASE_URL est définie → PostgreSQL
 # En local                : DATABASE_URL absente   → SQLite
-DATABASE_URL = os.getenv("DATABASE_URL")
 
+print("=" * 60)
+print("🔧 DIAGNOSTIC DE CONNEXION À LA BASE DE DONNÉES")
+print("=" * 60)
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+IS_RENDER = os.getenv("RENDER") is not None  # Render définit toujours cette variable
+
+# --- Log 1 : Détection de DATABASE_URL ---
+if DATABASE_URL:
+    # Masquer le mot de passe pour la sécurité des logs
+    masked_url = DATABASE_URL
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(DATABASE_URL)
+        if parsed.password:
+            masked_url = DATABASE_URL.replace(parsed.password, "****")
+    except Exception:
+        masked_url = DATABASE_URL[:25] + "****"
+    print(f"✅ DATABASE_URL détectée : OUI")
+    print(f"   URL (masquée) : {masked_url}")
+else:
+    print(f"❌ DATABASE_URL détectée : NON")
+
+# --- Log 2 : Environnement ---
+print(f"🌐 Environnement Render : {'OUI' if IS_RENDER else 'NON (local)'}")
+
+# --- Log 3 : Sélection du moteur ---
 if DATABASE_URL:
     # Render fournit parfois une URL commençant par "postgres://"
     # SQLAlchemy 1.4+ exige "postgresql://"
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        print("   ↳ URL corrigée : postgres:// → postgresql://")
     engine = create_engine(DATABASE_URL, echo=False)
-    print("✅ Connexion PostgreSQL (production)")
+    print("🚀 DÉMARRAGE : Connexion à PostgreSQL")
 else:
+    # 🛡️ SÉCURITÉ : Empêcher SQLite en production (Render)
+    if IS_RENDER:
+        print("🚨 ERREUR CRITIQUE : DATABASE_URL absente sur Render !")
+        print("   → SQLite utilise le filesystem éphémère de Render.")
+        print("   → Les données seront PERDUES à chaque redéploiement.")
+        print("   → Ajoutez DATABASE_URL dans les variables d'environnement Render.")
+        raise RuntimeError(
+            "DATABASE_URL manquante en production. "
+            "Configurez-la dans Render > Environment > Environment Variables."
+        )
     sqlite_file_name = "database_portfolio.db"
     sqlite_url = f"sqlite:///{sqlite_file_name}"
     connect_args = {"check_same_thread": False}
     engine = create_engine(sqlite_url, connect_args=connect_args)
-    print("✅ Connexion SQLite (développement local)")
+    print("🚀 DÉMARRAGE : Connexion à SQLite (développement local)")
+
+# --- Log 4 : Test de connexion ---
+try:
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
+    print("✅ Test de connexion : RÉUSSI")
+except Exception as e:
+    print(f"❌ Test de connexion : ÉCHOUÉ — {e}")
+    raise
+
+# --- Log 5 : Dialecte effectif ---
+print(f"🗄️  Dialecte SQLAlchemy : {engine.dialect.name}")
+print("=" * 60)
 
 
 def create_db_and_tables():
@@ -116,6 +166,26 @@ SessionDep = Annotated[Session, Depends(get_session)]
 async def lifespan(app: FastAPI):
     # Création de la base de données au démarrage
     create_db_and_tables()
+
+    # --- Diagnostic : tables existantes et nombre de lignes ---
+    print("=" * 60)
+    print("📊 ÉTAT DE LA BASE DE DONNÉES APRÈS DÉMARRAGE")
+    print("=" * 60)
+    try:
+        inspector = sa_inspect(engine)
+        tables = inspector.get_table_names()
+        print(f"   Tables trouvées : {tables}")
+        with Session(engine) as session:
+            for table_name in tables:
+                try:
+                    count = session.execute(text(f'SELECT COUNT(*) FROM "{table_name}"')).scalar()
+                    print(f"   📋 {table_name} : {count} ligne(s)")
+                except Exception as e:
+                    print(f"   ⚠️ {table_name} : erreur de lecture — {e}")
+    except Exception as e:
+        print(f"   ⚠️ Impossible de lister les tables : {e}")
+    print("=" * 60)
+
     # Migration portable (SQLite + PostgreSQL) : ajouter firebase_uid si absent
     try:
         inspector = sa_inspect(engine)
