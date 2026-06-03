@@ -48,6 +48,7 @@ For security reasons, sensitive keys are not tracked on GitHub. You must configu
 
 1. **Database:** The application uses SQLite by default for local development. To connect to a remote PostgreSQL database, create a `.env` file at the root of the project and add: `DATABASE_URL=your_postgres_connection_url`.
 2. **Firebase Configuration:** Download your Firebase service account private key from the Firebase Console. Place the file at the root of the project and rename it exactly to `serviceAccountKey.json`. *(Note: This file is ignored by Git and will not be pushed).*
+3. **Admin mode:** Administrators have the permission to delete any portfolio. To set up the admin account, you must add the ADMIN_EMAIL variable to your `.env` file.
 
 ### 4. Run the Application
 Start the local server using Uvicorn:

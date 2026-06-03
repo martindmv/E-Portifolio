@@ -12,9 +12,11 @@ Usage:
         print(user["uid"], user["email"])
 """
 
+import os
+
 import firebase_admin
 from firebase_admin import auth as firebase_auth, credentials
-from fastapi import HTTPException, Header, status
+from fastapi import Depends, HTTPException, Header, status
 
 
 # ============================================================
@@ -115,3 +117,37 @@ async def get_optional_user(
     except HTTPException:
         # Token invalide → on considère l'utilisateur comme non connecté
         return None
+
+
+# ============================================================
+# Dépendance Admin — vérifie le rôle administrateur
+# ============================================================
+
+
+async def get_current_admin(
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """
+    Dépendance ADMIN : vérifie que l'utilisateur authentifié est administrateur.
+
+    Compare l'email du token Firebase avec la variable d'environnement ADMIN_EMAIL.
+    Renvoie HTTP 403 si l'utilisateur n'est pas admin.
+
+    Retourne le token décodé (dict) si l'utilisateur est admin.
+    """
+    admin_email = os.getenv("ADMIN_EMAIL")
+    if not admin_email:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="ADMIN_EMAIL non configurée sur le serveur.",
+        )
+
+    user_email = user.get("email", "")
+    if user_email.lower() != admin_email.lower():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès refusé : droits administrateur requis.",
+        )
+
+    return user
+
