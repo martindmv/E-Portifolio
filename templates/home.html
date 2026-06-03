@@ -11,7 +11,8 @@
   {% if db_portfolios %}
   <div class="portfolio-grid">
     {% for portfolio in db_portfolios %}
-    <div class="card delay-{{ loop.index0 % 3 + 1 }} animate-fade-in" style="opacity: 0;">
+    <div class="card delay-{{ loop.index0 % 3 + 1 }} animate-fade-in" style="opacity: 0;"
+      id="portfolio-card-{{ portfolio.id }}">
       <h3>{{ portfolio.name }}</h3>
       <p><strong>Formation:</strong> {{ portfolio.formation }}</p>
 
@@ -24,6 +25,12 @@
       <a href="/portfolios/{{ portfolio.id }}" class="btn"
         style="width: 100%; text-align: center; margin-top: 1rem;">Voir les détails →</a>
 
+      <!-- Bouton Admin : masqué par défaut, affiché uniquement pour l'admin -->
+      <button class="btn admin-delete-btn" data-portfolio-id="{{ portfolio.id }}"
+        data-portfolio-name="{{ portfolio.name }}" style="display: none; width: 100%; text-align: center; margin-top: 0.5rem;
+                     background: linear-gradient(135deg, #dc2626, #b91c1c); border: none; cursor: pointer;">
+        Supprimer (Admin)
+      </button>
 
     </div>
     {% endfor %}
@@ -44,19 +51,94 @@
 
 {% block scripts %}
 <script type="module">
-  // Affiche/masque le lien de création selon l'état de connexion
-  window.addEventListener('auth-state-changed', (e) => {
+  // ─── Affiche/masque les éléments selon l'état de connexion ───
+  window.addEventListener('auth-state-changed', async (e) => {
+    const user = e.detail.user;
     const createLink = document.getElementById('home-create-link');
     const loginHint = document.getElementById('home-login-hint');
-    if (!createLink) return;
 
-    if (e.detail.user) {
-      createLink.style.display = 'inline-block';
-      if (loginHint) loginHint.style.display = 'none';
-    } else {
-      createLink.style.display = 'none';
-      if (loginHint) loginHint.style.display = 'block';
+    // Bouton "Créer" pour tout utilisateur connecté
+    if (createLink) {
+      createLink.style.display = user ? 'inline-block' : 'none';
     }
+    if (loginHint) {
+      loginHint.style.display = user ? 'none' : 'block';
+    }
+
+    // Boutons admin : interroge le backend pour savoir si l'utilisateur est admin
+    let isAdmin = false;
+    if (user) {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch('/api/admin/check', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        isAdmin = data.is_admin === true;
+      } catch (_) { /* pas admin en cas d'erreur */ }
+    }
+    document.querySelectorAll('.admin-delete-btn').forEach(btn => {
+      btn.style.display = isAdmin ? 'block' : 'none';
+    });
+  });
+
+  // ─── Fonction de suppression Admin ───
+  async function adminDeletePortfolio(portfolioId, portfolioName, buttonEl) {
+    // Demande de confirmation
+    if (!confirm(`⚠️ Supprimer définitivement le portfolio « ${portfolioName} » (ID: ${portfolioId}) ?\n\nCette action est irréversible.`)) {
+      return;
+    }
+
+    // Récupère le token Firebase de l'utilisateur connecté
+    const auth = window.__FIREBASE_AUTH__;
+    if (!auth || !auth.currentUser) {
+      alert('Erreur : vous n\'êtes pas connecté.');
+      return;
+    }
+
+    const token = await auth.currentUser.getIdToken();
+
+    // Désactive le bouton pendant la requête
+    buttonEl.disabled = true;
+    buttonEl.textContent = '⏳ Suppression…';
+
+    try {
+      const response = await fetch(`/admin/portfolio/${portfolioId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `Erreur HTTP ${response.status}`);
+      }
+
+      // Succès — animation de disparition puis suppression du DOM
+      const card = document.getElementById(`portfolio-card-${portfolioId}`);
+      if (card) {
+        card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.95)';
+        setTimeout(() => card.remove(), 400);
+      }
+
+    } catch (err) {
+      alert(`Échec de la suppression : ${err.message}`);
+      buttonEl.disabled = false;
+      buttonEl.textContent = '🗑️ Supprimer (Admin)';
+    }
+  }
+
+  // ─── Délégation d'événement sur tous les boutons admin ───
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.admin-delete-btn');
+    if (!btn) return;
+    const portfolioId = btn.dataset.portfolioId;
+    const portfolioName = btn.dataset.portfolioName;
+    adminDeletePortfolio(portfolioId, portfolioName, btn);
   });
 </script>
 {% endblock %}

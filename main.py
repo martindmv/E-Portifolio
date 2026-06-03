@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
 from sqlalchemy import inspect as sa_inspect, text
 from fastapi.responses import RedirectResponse
-from auth import get_current_user
+from auth import get_current_user, get_current_admin, get_optional_user
 
 
 # Creation of the tables Project, Skill, Experience and Portfolio
@@ -366,6 +366,49 @@ def delete_portfolio_post(
     session.delete(portfolio)
     session.commit()
     return {"ok": True}
+
+
+# ============================================================
+# Routes Admin
+# ============================================================
+
+
+@app.get("/api/admin/check")
+def check_admin_status(user: dict | None = Depends(get_optional_user)):
+    """
+    Vérifie si l'utilisateur connecté est administrateur.
+    Retourne {"is_admin": true} ou {"is_admin": false}.
+    L'email admin n'est jamais exposé côté client.
+    """
+    if not user:
+        return {"is_admin": False}
+    admin_email = os.getenv("ADMIN_EMAIL", "")
+    is_admin = user.get("email", "").lower() == admin_email.lower()
+    return {"is_admin": is_admin}
+
+
+# Route Admin — suppression de n'importe quel portfolio
+@app.delete("/admin/portfolio/{portfolio_id}")
+def admin_delete_portfolio(
+    portfolio_id: int,
+    session: SessionDep,
+    admin: dict = Depends(get_current_admin),
+):
+    """
+    Supprime un portfolio par son ID, sans vérifier la propriété.
+    Réservé à l'administrateur (email = ADMIN_EMAIL).
+    Les relations enfants (skills, experiences, projects) sont
+    supprimées en cascade grâce à la configuration du modèle.
+    """
+    portfolio = session.get(Portfolio, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    session.delete(portfolio)
+    session.commit()
+    return {
+        "ok": True,
+        "detail": f"Portfolio {portfolio_id} supprimé par l'admin {admin.get('email')}",
+    }
 
 
 # Ajouter une compétence à un portfolio (propriétaire uniquement)

@@ -61,6 +61,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
+        // Rendre l'instance auth accessible aux scripts enfants (pour getIdToken)
+        window.__FIREBASE_AUTH__ = auth;
+
         // Met à jour les liens de la navbar selon l'état de connexion
         onAuthStateChanged(auth, (user) => {
             const loginLink = document.getElementById('nav-login-link');
@@ -76,14 +79,16 @@
                     userEmail.style.display = 'inline';
                     userEmail.textContent = user.email;
                 }
-                // UID global accessible par les scripts enfants (portfolio_detail, etc.)
+                // Globals accessibles par les scripts enfants
                 window.__FIREBASE_UID__ = user.uid;
+                window.__FIREBASE_EMAIL__ = user.email;
             } else {
                 if (loginLink) loginLink.style.display = 'inline';
                 if (logoutBtn) logoutBtn.style.display = 'none';
                 if (createLink) createLink.style.display = 'none';
                 if (userEmail) userEmail.style.display = 'none';
                 window.__FIREBASE_UID__ = null;
+                window.__FIREBASE_EMAIL__ = null;
             }
 
             // Dispatch un événement pour que les pages enfants réagissent
