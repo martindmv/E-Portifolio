@@ -65,5 +65,6 @@ Once running, the API and documentation will be accessible at `http://localhost:
 This application is fully configured for continuous integration and deployment (CI/CD) on **Render.com**.
 
 * **Automatic Deployments:** Any code pushed or merged into the `master` branch on GitHub automatically triggers a zero-downtime deployment on Render.
-* **Database Persistence:** Production data is safely stored on a dedicated Render PostgreSQL database, ensuring no data is lost during server sleeps or restarts.
+* **Database Persistence:** Production data is safely stored on a dedicated Render PostgreSQL database, ensuring no data is lost during server sleeps or restarts. If you wish to visualize your data, you can connect your Postgresql to a SQL Client like `DBeaver`. 
 * **Secret Management:** Production credentials (`DATABASE_URL` and the Firebase `serviceaccountkey.json`) are securely injected into the build using Render's "Environment Variables" and "Secret Files" configurations.
+
