@@ -13,9 +13,9 @@ This web application allows users to create and manage E-Portfolios to highlight
 
 ## 🛠️ Technology Stack
 * **Backend Framework:** FastAPI (Python)
-* **ORM:** SQLAlchemy
+* **ORM:** SQLModel
 * **Database:** PostgreSQL (Production) / SQLite (Local Development)
-* **Storage:** Firebase (for image and media storage)
+* **Authentification:** Firebase
 * **Hosting & CI/CD:** Render.com
 
 ---
