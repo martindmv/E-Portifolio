@@ -68,10 +68,3 @@ Final validation step to ensure the new landing page is correctly integrated and
 
 **Labels suggérés**
 `qa`, `testing`
-
-**Blocking relationships**
-| Task | Blocked by | Blocks | Can start when |
-| --- | --- | --- | --- |
-| TASK-001 – Root route and template structure | Nothing | TASK-002 and, transitively, TASK-003 | Immediately |
-| TASK-002 – Landing-page content and styling | TASK-001 | TASK-003 | The / route and landing.html template exist and work |
-| TASK-003 – Integration and regression testing | TASK-002; transitively TASK-001 | Nothing | The complete landing page is implemented |
